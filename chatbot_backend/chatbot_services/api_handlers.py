@@ -3,7 +3,7 @@
 import httpx
 import time
 import re
-from functools import lru_cache
+import asyncio 
 
 WEATHER_CACHE = {}
 WEATHER_CACHE_TTL_SECONDS = 300  # 5 minutes
@@ -36,9 +36,13 @@ async def get_coordinates_async(city):
         print(f"⚠️ Error fetching coordinates for {city}: {e}")
         return None, None
 
-async def show_weather_api_async(city=None):
+async def show_weather_api_async(city: str) -> dict:
+    """
+    Fetches weather data asynchronously for a given city.
+    This function should be called directly by the LangChain tool.
+    """
     if not city:
-        return {"status": "prompt", "message": "🌍 Which city's weather would you like to know?"}
+        return {"status": "error", "message": "🌍 Please provide a city name."}
 
     city_key = city.lower().strip()
     current_time = time.time()
@@ -77,44 +81,3 @@ async def show_weather_api_async(city=None):
             return {"status": "success", "message": cached["message"]}
         return {"status": "error", "message": f"⚠️ Error fetching weather data: {e}"}
 
-# --- TOOL ROUTER ---
-
-API_TOOLS = {
-    "weather": show_weather_api_async,
-}
-
-def extract_city_from_text(text: str) -> str:
-    """
-    Try to extract a city name from user input.
-    Looks after 'in', 'for', 'at' or the word 'weather'.
-    """
-    text_lower = text.lower().strip()
-
-    # Regex pattern to match "weather in <city>" or "in <city>"
-    match = re.search(r"(?:weather\s*(?:in|for)?\s*|in\s+|for\s+|at\s+)([a-zA-Z\s]+)", text_lower)
-    if match:
-        city_candidate = match.group(1).strip()
-        # Remove extra words like 'today', 'now'
-        city_candidate = re.sub(r"\b(today|now|please|tomorrow)\b", "", city_candidate).strip()
-        if city_candidate:
-            return city_candidate
-
-    # Fallback: pick first word that's not a filler
-    words = text_lower.split()
-    for w in words:
-        if w not in ["weather", "in", "the", "what", "is", "like", "of", "for", "at", "tell", "me", "about"]:
-            return w
-    return None
-
-async def handle_tool_request(user_input: str):
-    """
-    Detects if user_input matches a known tool request and routes it.
-    Returns None if no tool matches.
-    """
-    user_input_lower = user_input.lower().strip()
-
-    if "weather" in user_input_lower:
-        city = extract_city_from_text(user_input)
-        return (await API_TOOLS["weather"](city)).get("message")
-
-    return None
