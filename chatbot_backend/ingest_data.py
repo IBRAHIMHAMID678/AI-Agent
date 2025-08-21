@@ -1,11 +1,13 @@
 import os
 import time
-import camelot
-from langchain_community.document_loaders import PyMuPDFLoader, UnstructuredWordDocumentLoader, TextLoader
-from langchain_community.embeddings import OllamaEmbeddings
-from langchain_community.vectorstores import Chroma
+import json
+import logging
+from langchain_ollama import OllamaEmbeddings
+from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 DATA_PATH = "./data"
 PERSIST_DIR = "./chroma_db"
@@ -13,9 +15,8 @@ PERSIST_DIR = "./chroma_db"
 def ingest_data():
     start_time = time.time()
     
-    # Check if vector store already exists
     if os.path.exists(PERSIST_DIR) and os.listdir(PERSIST_DIR):
-        print(f"Vector store exists in {PERSIST_DIR}. Skipping ingestion.")
+        logging.info(f"Vector store exists in {PERSIST_DIR}. Skipping ingestion.")
         return
 
     os.makedirs(PERSIST_DIR, exist_ok=True)
@@ -24,53 +25,48 @@ def ingest_data():
     load_time = time.time()
     for file in os.listdir(DATA_PATH):
         filepath = os.path.join(DATA_PATH, file)
-        if file.endswith(".pdf"):
-            # Use PyMuPDFLoader for faster PDF parsing
-            loader = PyMuPDFLoader(filepath)
-            pdf_docs = loader.load()
-            # Extract tables using camelot for employee records
+        if file.lower().endswith(".json"):
             try:
-                tables = camelot.read_pdf(filepath, flavor='stream')
-                table_text = "\n".join([table.df.to_string() for table in tables])
-                pdf_docs.append(Document(page_content=table_text, metadata={"source": filepath, "type": "table"}))
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                for record in data:
+                    record_text = f"ID: {record.get('id', '')}, Name: {record.get('name', '')}, Role: {record.get('role', '')}, Department: {record.get('department', '')}"
+                    documents.append(Document(page_content=record_text, metadata={"source": filepath, "type": "employee_record", "id": record.get('id')}))
+                logging.info(f"Processed {file} with {len(data)} employee records.")
             except Exception as e:
-                print(f"No tables found in {file}: {e}")
-            documents.extend(pdf_docs)
-        elif file.endswith(".docx"):
-            loader = UnstructuredWordDocumentLoader(filepath)
-            documents.extend(loader.load())
-        elif file.endswith(".txt"):
-            loader = TextLoader(filepath)
-            documents.extend(loader.load())
+                logging.error(f"Error processing {file}: {e}")
         else:
-            print(f"Skipping unsupported file: {file}")
+            logging.warning(f"Skipping unsupported file: {file}")
 
     if not documents:
-        print("⚠ No documents found in the data directory.")
+        logging.error("No documents found in the data directory.")
         return
 
-    print(f"Document loading: {time.time() - load_time:.2f}s")
+    logging.info(f"Document loading: {time.time() - load_time:.2f}s")
 
     split_time = time.time()
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=300,  # Reduced chunk size for faster embedding and retrieval
-        chunk_overlap=50
+        chunk_size=200,
+        chunk_overlap=20
     )
     docs_chunks = text_splitter.split_documents(documents)
-    print(f"Document splitting: {time.time() - split_time:.2f}s")
+    logging.info(f"Document splitting: {time.time() - split_time:.2f}s")
 
     embed_time = time.time()
-    ollama_embeddings = OllamaEmbeddings(model="nomic-embed-text")
-    vectorstore = Chroma.from_documents(
-        documents=docs_chunks,
-        embedding=ollama_embeddings,
-        persist_directory=PERSIST_DIR,
-        collection_metadata={"hnsw:space": "l2", "hnsw:M": 16}  # Optimized HNSW index
-    )
-    vectorstore.persist()
-    print(f"Embedding and storage: {time.time() - embed_time:.2f}s")
-    print(f"Total ingestion: {time.time() - start_time:.2f}s")
-    print(f"✅ Ingested {len(docs_chunks)} document chunks into {PERSIST_DIR}.")
+    embeddings = OllamaEmbeddings(model="nomic-embed-text")
+    try:
+        Chroma.from_documents(
+            documents=docs_chunks,
+            embedding=embeddings,
+            persist_directory=PERSIST_DIR,
+            collection_metadata={"hnsw:space": "l2", "hnsw:M": 8}
+        )
+        logging.info(f"Embedding and storage: {time.time() - embed_time:.2f}s")
+        logging.info(f"Total ingestion: {time.time() - start_time:.2f}s")
+        logging.info(f"Ingested {len(docs_chunks)} document chunks into {PERSIST_DIR}.")
+    except Exception as e:
+        logging.error(f"Error creating vector store: {e}")
+        raise
 
 if __name__ == "__main__":
     ingest_data()
