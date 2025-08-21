@@ -5,7 +5,7 @@ The chatbot is built using Python (FastAPI backend) and React (Next.js frontend)
 It is designed for extensibility, allowing integration with multiple APIs and datasets.
 
 🚀 **Features
-AI-Powered Conversations **– Uses the gemma3:1b language model via Ollama for generating intelligent and context-aware responses.
+AI-Powered Conversations **– Uses the qwen2:0.5b-instruct-q4_0 language model via Ollama for generating intelligent and context-aware responses.
 
 Custom Knowledge Base (RAG) – Retrieve information from a local dataset for domain-specific queries.
 
