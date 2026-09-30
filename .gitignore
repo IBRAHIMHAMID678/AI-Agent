@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+agent/
+
+# App data
+chroma_db/
+*.db
+*.sqlite3
+
+# Env / secrets
+.env
+
+# OS
+.DS_Store
+Thumbs.db
