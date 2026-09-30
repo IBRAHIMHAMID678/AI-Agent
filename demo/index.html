@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TechZone — Electronics Store</title>
+<style>
+  :root { --brand:#4f46e5; --ink:#0f172a; --mut:#64748b; --bg:#f8fafc; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',system-ui,-apple-system,sans-serif; color:var(--ink); background:var(--bg); }
+  header { background:#0f172a; color:#fff; position:sticky; top:0; z-index:50; }
+  .wrap { max-width:1180px; margin:0 auto; padding:0 24px; }
+  .nav { display:flex; align-items:center; justify-content:space-between; height:64px; }
+  .logo { font-weight:800; font-size:22px; letter-spacing:-.5px; }
+  .logo span { color:#818cf8; }
+  .nav-links { display:flex; gap:28px; font-size:14px; }
+  .nav-links a { color:#cbd5e1; text-decoration:none; }
+  .nav-links a:hover { color:#fff; }
+  .hero { background:linear-gradient(120deg,#1e1b4b,#4f46e5); color:#fff; padding:72px 0; }
+  .hero h1 { font-size:44px; letter-spacing:-1px; margin-bottom:12px; }
+  .hero p { color:#c7d2fe; font-size:17px; max-width:520px; margin-bottom:24px; }
+  .btn { display:inline-block; background:#fff; color:#1e1b4b; font-weight:700; padding:12px 26px;
+         border-radius:10px; text-decoration:none; font-size:15px; }
+  .section { padding:56px 0; }
+  .section h2 { font-size:26px; letter-spacing:-.5px; margin-bottom:6px; }
+  .section .sub { color:var(--mut); margin-bottom:28px; font-size:15px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:20px; }
+  .card { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:20px;
+          transition:transform .15s, box-shadow .15s; }
+  .card:hover { transform:translateY(-3px); box-shadow:0 12px 28px rgba(15,23,42,.08); }
+  .thumb { height:120px; border-radius:10px; background:linear-gradient(135deg,#eef2ff,#e0e7ff);
+           display:flex; align-items:center; justify-content:center; font-size:40px; margin-bottom:14px; }
+  .card h3 { font-size:16px; margin-bottom:4px; }
+  .specs { color:var(--mut); font-size:12.5px; line-height:1.5; margin:8px 0 12px; min-height:56px; }
+  .row { display:flex; align-items:center; justify-content:space-between; }
+  .price { font-weight:800; font-size:19px; }
+  .stock { font-size:12px; font-weight:600; padding:4px 10px; border-radius:99px; }
+  .in { background:#dcfce7; color:#166534; } .out { background:#fee2e2; color:#991b1b; }
+  .policy { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:28px; margin-bottom:16px; }
+  .policy h3 { margin-bottom:8px; font-size:17px; }
+  .policy p { color:#475569; font-size:14.5px; line-height:1.65; }
+  footer { background:#0f172a; color:#94a3b8; padding:36px 0; font-size:13.5px; margin-top:40px; }
+  .faq { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:18px 22px; margin-bottom:10px; }
+  .faq b { display:block; margin-bottom:6px; } .faq p { color:#475569; font-size:14px; }
+  .banner { background:#eef2ff; border:1px dashed #a5b4fc; color:#3730a3; border-radius:10px;
+            padding:10px 16px; font-size:13px; margin:18px 0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <div class="logo">Tech<span>Zone</span></div>
+    <nav class="nav-links">
+      <a href="#catalog">Catalog</a><a href="#shipping">Shipping</a>
+      <a href="#returns">Returns</a><a href="#faq">FAQ</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <h1>Gear that keeps up with you.</h1>
+    <p>Laptops, audio, monitors &amp; accessories — official warranty, cash on delivery, 14-day returns.</p>
+    <a class="btn" href="#catalog">Shop the catalog</a>
+  </div>
+</div>
+
+<div class="wrap banner">Demo store for the AI-Agent website operator — the chat bubble (bottom-right) is the embeddable widget. Ask it to compare products or track order <b>TZ-1042</b>.</div>
+
+<div class="wrap section" id="catalog">
+  <h2>Catalog</h2>
+  <p class="sub">12 products · prices include 1-year official warranty</p>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="wrap section" id="shipping">
+  <h2>Shipping policy</h2>
+  <p class="sub">On this page: delivery times, rates, COD</p>
+  <div class="policy"><h3>Delivery</h3><p>Free shipping on orders over $50 (otherwise $4.95 flat). Orders ship within 24 hours, delivery in 3–5 business days via TCS. Cash on delivery available nationwide.</p></div>
+</div>
+
+<div class="wrap section" id="returns">
+  <h2>Returns &amp; warranty</h2>
+  <div class="policy"><h3>14-day easy returns</h3><p>Unopened items get a full refund, opened items get store credit. Warranty claims are handled in-store within the 1-year official warranty period. Laptops and tablets include free first-year accidental-damage cover.</p></div>
+</div>
+
+<div class="wrap section" id="faq">
+  <h2>FAQ</h2>
+  <div class="faq"><b>Do you offer cash on delivery?</b><p>Yes — cash on delivery is available nationwide on all orders.</p></div>
+  <div class="faq"><b>How long does delivery take?</b><p>Orders ship within 24 hours and arrive in 3–5 business days.</p></div>
+  <div class="faq"><b>Can I return a product?</b><p>Yes, within 14 days. Unopened items get a full refund; opened items get store credit.</p></div>
+</div>
+
+<footer><div class="wrap">© 2026 TechZone demo store · Built to demo the AI-Agent website operator · Prices in USD</div></footer>
+
+<script>
+/* Catalog mirrors seed_data.py (demo storefront data). */
+const CATALOG = [
+  {name:"Volt X1 Laptop", price:899, specs:["Intel Core i7 13th gen","16GB RAM","512GB SSD",'15.6" FHD display',"8hr battery"], stock:14, emoji:"💻"},
+  {name:"Volt X1 Pro Laptop", price:1199, specs:["Intel Core i9 13th gen","32GB RAM","1TB SSD","RTX 4050","10hr battery"], stock:6, emoji:"💻"},
+  {name:"VoltTab 11 Tablet", price:349, specs:['11" 2K display',"8GB RAM","128GB storage","stylus included"], stock:22, emoji:"📱"},
+  {name:"Nova 27\" 4K Monitor", price:329, specs:['27" 4K UHD',"144Hz","HDR400"], stock:9, emoji:"🖥️"},
+  {name:"Nova 24\" 1080p Monitor", price:149, specs:['24" Full HD',"100Hz"], stock:31, emoji:"🖥️"},
+  {name:"Pulse Buds Pro", price:79, specs:["Active noise cancellation","Bluetooth 5.3","36hr battery"], stock:48, emoji:"🎧"},
+  {name:"Pulse Buds Lite", price:39, specs:["Bluetooth 5.2","24hr battery"], stock:73, emoji:"🎧"},
+  {name:"BoomBox Mini Speaker", price:59, specs:["360° sound","IPX7 waterproof","18hr playtime"], stock:26, emoji:"🔊"},
+  {name:"MechKey 75 Keyboard", price:89, specs:["75% layout","hot-swappable","RGB"], stock:17, emoji:"⌨️"},
+  {name:"SwiftMouse Pro", price:59, specs:["26K DPI","90hr battery","ergonomic"], stock:40, emoji:"🖱️"},
+  {name:"ChargeHub 65W GaN", price:45, specs:["65W GaN","2x USB-C + 1x USB-A"], stock:55, emoji:"🔌"},
+  {name:"PowerBank 20000mAh", price:35, specs:["20000mAh","22.5W fast charge"], stock:0, emoji:"🔋"}
+];
+document.getElementById('grid').innerHTML = CATALOG.map(p => `
+  <div class="card">
+    <div class="thumb">${p.emoji}</div>
+    <h3>${p.name}</h3>
+    <div class="specs">${p.specs.join(" · ")}</div>
+    <div class="row">
+      <span class="price">$${p.price}</span>
+      <span class="stock ${p.stock>0?'in':'out'}">${p.stock>0?p.stock+' in stock':'Out of stock'}</span>
+    </div>
+  </div>`).join('');
+</script>
+
+<script>
+/* ============================================================
+   DEMO MOCK — screenshot use only. NOT part of the product.
+   Stand-in for POST /api/chat so this page runs standalone.
+   In production the widget talks to the real FastAPI backend.
+   ============================================================ */
+window.__aiAgentMock = {
+  config() {
+    return {
+      business_name: "TechZone",
+      brand_color: "#4f46e5",
+      welcome_message: "Hi! I'm TechZone's assistant — I can search the catalog, compare products, and track orders.",
+      trigger: { enabled: true, pages: ["/demo"], delay_sec: 6,
+                 message: "Looking for a laptop or audio gear? I can compare models side-by-side." }
+    };
+  },
+  async chat({message}) {
+    await new Promise(r => setTimeout(r, 700));
+    const m = message.toLowerCase();
+    const money = n => "$" + n;
+    const line = p => `• **${p.name}** — ${money(p.price)}${p.stock===0?" (out of stock)":` (${p.stock} in stock)`}\n  ${p.specs.slice(0,4).join(", ")}`;
+    const tool = (name, params, result_summary) => ({name, params, result_summary});
+
+    if (/tz-?1042|track.*order|where.*order|order.*status/.test(m)) {
+      return {
+        reply: "Found it — here's your order:",
+        tools_used: [tool("check_order_status", {order_id:"TZ-1042"},
+          "Order TZ-1042: Shipped via TCS on Sep 28 — arriving Thursday. Tracking: TCS88210042.")],
+        sources: [], suggested_replies: ["Compare two laptops", "Shipping info"]
+      };
+    }
+    if (/compare/.test(m)) {
+      const a = CATALOG[0], b = CATALOG[1];
+      return {
+        reply: "Here's the Volt X1 vs Volt X1 Pro, side by side:",
+        tools_used: [tool("compare_products", {names:["Volt X1","Volt X1 Pro"]},
+          "Compared 2 products: price, specs, stock.")],
+        sources: [], suggested_replies: ["Check stock of Volt X1 Pro", "Track my order"]
+      };
+    }
+    if (/stock|available|in stock/.test(m)) {
+      const p = CATALOG.find(p => m.includes(p.name.toLowerCase().split(" ")[0].toLowerCase()) && p.name.toLowerCase().includes("pro")) || CATALOG[1];
+      return {
+        reply: `**${p.name}** — ${p.stock} units in stock at ${money(p.price)}.`,
+        tools_used: [tool("check_stock", {product_name:p.name}, `${p.stock} units in stock.`)],
+        sources: [], suggested_replies: ["Compare the two laptops"]
+      };
+    }
+    if (/ship|deliver/.test(m)) {
+      return { reply: "Free shipping on orders over $50 (otherwise $4.95). Orders ship within 24 hours and arrive in 3–5 business days. Cash on delivery is available nationwide.",
+        tools_used: [tool("search_knowledge_base", {query:"shipping policy"}, "1 doc: Shipping policy.")],
+        sources: [{title:"Shipping policy", url:"#shipping"}], suggested_replies: ["Return policy?", "Track my order"] };
+    }
+    if (/return|refund|warranty/.test(m)) {
+      return { reply: "14-day easy returns — unopened items get a full refund, opened ones get store credit. Everything carries a 1-year official warranty.",
+        tools_used: [tool("search_knowledge_base", {query:"returns warranty"}, "1 doc: Returns & warranty.")],
+        sources: [{title:"Returns & warranty", url:"#returns"}], suggested_replies: ["Shipping info"] };
+    }
+    if (/laptop/.test(m)) {
+      const laps = CATALOG.filter(p => /laptop/i.test(p.name));
+      return { reply: "We have 2 laptops right now:\n" + laps.map(line).join("\n"),
+        tools_used: [tool("search_products", {query:"laptop"}, "2 products matched.")],
+        sources: [], suggested_replies: ["Compare the two laptops", "Cheapest monitor?"] };
+    }
+    if (/catalog|all products|what.*sell/.test(m)) {
+      return { reply: "Here's the full catalog:\n" + CATALOG.slice(0,6).map(line).join("\n") + "\n…and 6 more in audio & accessories.",
+        tools_used: [tool("search_products", {query:""}, "12 products matched.")],
+        sources: [], suggested_replies: ["Compare the two laptops", "Track my order"] };
+    }
+    return { reply: "I can search the catalog, compare products, check stock, look up policies, and track orders (try TZ-1042). What do you need?",
+      tools_used: [], sources: [], suggested_replies: ["Show me the catalog", "Track my order"] };
+  }
+};
+</script>
+
+<!-- DEMO widget embed: data-mock="true" runs the DEMO MOCK above (screenshots only).
+     Production embed: <script src="https://YOUR-SERVER/widget.js" data-tenant="tnt_xxx" data-color="#4f46e5"></script> -->
+<script src="/widget.js" data-tenant="demo" data-mock="true" data-color="#4f46e5" data-name="TechZone"></script>
+
+<script>
+/* Screenshot automation: ?shot=compare | ?shot=tool — opens widget, plays a scripted exchange. */
+(function () {
+  const q = new URLSearchParams(location.search).get("shot");
+  if (!q) return;
+  const scripts = {
+    compare: ["Compare the Volt X1 and Volt X1 Pro"],
+    tool: ["Where is my order TZ-1042?"]
+  };
+  const msgs = scripts[q] || [];
+  let t = 1200;
+  const w = () => window.__aiAgentWidget;
+  setTimeout(() => w() && w().open(), 600);
+  msgs.forEach(msg => { setTimeout(() => w() && w().send(msg), t); t += 2600; });
+})();
+</script>
+</body>
+</html>

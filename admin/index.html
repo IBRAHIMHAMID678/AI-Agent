@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Agent Console — Admin Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+if (window.tailwind) tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter','ui-sans-serif','system-ui','sans-serif'],
+        mono: ['JetBrains Mono','ui-monospace','SFMono-Regular','monospace']
+      },
+      boxShadow: {
+        card: '0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.07)'
+      }
+    }
+  }
+}
+</script>
+<style type="text/tailwindcss">
+  .card { @apply bg-white rounded-xl border border-slate-200 shadow-card; }
+  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-60; }
+  .btn-secondary { @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60; }
+  .btn-danger-ghost { @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-transparent px-3 py-1.5 text-sm font-semibold text-red-600 transition hover:border-red-200 hover:bg-red-50; }
+  .input { @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100; }
+  .label { @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-500; }
+  .th { @apply px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500; }
+  .td { @apply px-4 py-3 align-top text-sm text-slate-700; }
+  .badge { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+  .tab-btn { @apply relative whitespace-nowrap px-4 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-900; }
+</style>
+<style>
+  html, body { height: 100%; }
+  body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; border: 2px solid transparent; background-clip: content-box; }
+  .dark-scroll::-webkit-scrollbar-thumb { background: #334155; border: 2px solid transparent; background-clip: content-box; }
+  details.coll > summary { list-style: none; cursor: pointer; }
+  details.coll > summary::-webkit-details-marker { display: none; }
+  .fade-in { animation: fadeIn .18s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+  .toast-in { animation: toastIn .25s cubic-bezier(.21,1.02,.73,1); }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .pulse-dot { animation: pulseDot 2s ease-in-out infinite; }
+  @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  pre.code { tab-size: 2; }
+</style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800">
+
+<div id="app" class="flex h-screen overflow-hidden">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside id="sidebar" class="dark-scroll fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full flex-col bg-slate-950 text-slate-300 transition-transform duration-200 lg:static lg:translate-x-0">
+    <div class="flex items-center gap-3 px-5 pb-5 pt-6">
+      <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-950/50">
+        <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+        </svg>
+      </div>
+      <div class="min-w-0">
+        <div class="text-[15px] font-bold leading-tight text-white">Agent Console</div>
+        <div class="text-[11px] text-slate-400">Website AI operator</div>
+      </div>
+      <span id="preview-badge" class="ml-auto hidden rounded-md border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300">Preview</span>
+    </div>
+    <div class="flex items-center justify-between px-5 pb-2">
+      <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Tenants</span>
+      <span id="tenant-count" class="rounded-full bg-white/5 px-2 py-0.5 text-[11px] font-semibold text-slate-400"></span>
+    </div>
+    <nav id="tenant-list" class="dark-scroll flex-1 space-y-1 overflow-y-auto px-3 pb-3"></nav>
+    <div class="border-t border-white/10 p-4">
+      <button onclick="UI.openTenantModal()" class="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-950/40 transition hover:bg-indigo-500 active:bg-indigo-700">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M12 4v16m8-8H4"/></svg>
+        New tenant
+      </button>
+    </div>
+  </aside>
+  <div id="sidebar-overlay" class="fixed inset-0 z-30 hidden bg-slate-950/60 lg:hidden" onclick="UI.toggleSidebar()"></div>
+
+  <!-- ============ MAIN ============ -->
+  <main class="flex min-w-0 flex-1 flex-col">
+    <header id="tenant-header" class="border-b border-slate-200 bg-white"></header>
+    <nav id="tabbar" class="border-b border-slate-200 bg-white px-2 sm:px-4"></nav>
+    <div id="content" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8"></div>
+  </main>
+</div>
+
+<div id="modal-root"></div>
+<div id="toast-root" class="pointer-events-none fixed right-4 top-4 z-[60] flex w-[min(92vw,380px)] flex-col gap-2"></div>
+
+<script>
+/* ============================================================================
+   PREVIEW ONLY — for screenshots without a backend:
+   If the URL contains ?preview=1, every API call below is intercepted by
+   mockApi() and served from the built-in SAMPLE_DATA object. No network
+   requests are made and all mutations (create/edit/delete/answer/seed)
+   update the in-memory mock store so the UI stays fully interactive.
+   Against a real backend, this block is simply never entered.
+   ============================================================================ */
+const PREVIEW = window.location.search.includes('preview=1');
+
+/* ---------------- utils ---------------- */
+const $ = (sel, el = document) => el.querySelector(sel);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = (n) => Number(n || 0).toLocaleString('en-US');
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d)) return '—';
+  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function timeAgo(iso) {
+  if (!iso) return '—';
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (isNaN(s) || s < 0) return 'just now';
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  const d = Math.floor(h / 24);
+  if (d < 30) return d + 'd ago';
+  return fmtDate(iso);
+}
+function prettyJSON(v) {
+  try {
+    const o = typeof v === 'string' ? JSON.parse(v) : v;
+    return JSON.stringify(o, null, 2);
+  } catch (e) { return String(v ?? ''); }
+}
+function truncate(s, n) {
+  s = String(s ?? '');
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
+}
+function hostOf(url) {
+  try { return new URL(url).hostname; } catch (e) { return String(url || ''); }
+}
+
+/* ---------------- sample data (PREVIEW ONLY) ---------------- */
+function hAgo(h) { return new Date(Date.now() - h * 3600e3).toISOString(); }
+function mAgo(m) { return new Date(Date.now() - m * 60e3).toISOString(); }
+function dAgo(d) { return new Date(Date.now() - d * 86400e3).toISOString(); }
+
+const SAMPLE_DATA = {
+  tenants: [
+    {
+      id: 't_nova', name: 'Nova Electronics', website: 'https://novaelectronics.pk',
+      brand_color: '#6366f1', created_at: dAgo(21),
+      welcome_message: 'Hi there! Looking for the right gadget? Ask me anything about our products, prices, or delivery.',
+      trigger: { enabled: true, pages: ['/', '/products', '/deals'], delay_sec: 8, message: 'Need help choosing? I can compare specs and check live stock for you.' },
+      pages: [
+        {
+          url: 'https://novaelectronics.pk/', title: 'Nova Electronics — Official Store', crawled_at: hAgo(3),
+          extracted: {
+            products: [
+              { name: 'Nova X5 Smartphone', price: 'Rs 84,999', specs: ['6.7" AMOLED 120Hz', '12GB RAM / 256GB', '5000mAh battery'], stock: 'In stock (23)' },
+              { name: 'AeroBook Pro 14', price: 'Rs 189,999', specs: ['Intel Core Ultra 7', '16GB LPDDR5 / 1TB SSD', '2.8K OLED display'], stock: 'In stock (11)' },
+              { name: 'VoltBuds 2 ANC', price: 'Rs 9,499', specs: ['Hybrid ANC', '36-hour total battery', 'Bluetooth 5.4'], stock: 'Low stock (4)' }
+            ],
+            faqs: [
+              { q: 'Do you offer cash on delivery?', a: 'Yes — COD is available nationwide. Please keep the exact amount ready; our riders carry limited change.' },
+              { q: 'What warranty do I get?', a: 'Every device carries a 1-year official brand warranty, claimable at any Nova service center with your invoice.' }
+            ],
+            policies: [
+              { type: 'Shipping', text: 'Orders placed before 3 PM ship the same day via TCS. Delivery takes 1–3 working days nationwide.' },
+              { type: 'Returns', text: '7-day easy returns on unopened items in original packaging. Refunds go to the original payment method.' }
+            ]
+          }
+        },
+        {
+          url: 'https://novaelectronics.pk/products/audio', title: 'Audio — Headphones & Speakers', crawled_at: hAgo(3),
+          extracted: {
+            products: [
+              { name: 'BassBox Go Speaker', price: 'Rs 14,999', specs: ['20W stereo output', 'IPX6 water resistant', '18-hour playtime'], stock: 'In stock (31)' },
+              { name: 'StudioPods Max', price: 'Rs 24,999', specs: ['Adaptive ANC', 'LDAC hi-res audio', '40-hour case battery'], stock: 'Low stock (3)' }
+            ],
+            faqs: [
+              { q: 'Are StudioPods Max compatible with iPhone?', a: 'Yes — they pair over Bluetooth with iPhone, Android, and laptops. LDAC hi-res audio works on Android only.' }
+            ],
+            policies: [
+              { type: 'Warranty', text: 'Audio products carry a 6-month replacement warranty against manufacturing defects.' }
+            ]
+          }
+        },
+        {
+          url: 'https://novaelectronics.pk/support', title: 'Support & Help Center', crawled_at: hAgo(26),
+          extracted: {
+            products: [],
+            faqs: [
+              { q: 'How do I track my order?', a: 'Enter your order number on the Track Order page, or open the confirmation SMS — it includes a live TCS tracking link.' },
+              { q: 'Which payment methods do you accept?', a: 'Cash on delivery, debit/credit cards, and bank transfer. Installments are available on orders above Rs 50,000.' }
+            ],
+            policies: [
+              { type: 'Privacy', text: 'We only use your contact details to fulfil orders and support requests. We never sell customer data.' }
+            ]
+          }
+        }
+      ],
+      tools: [
+        { id: 'tool_stock', name: 'check_stock', description: 'Look up live price and stock for a product by its SKU.', params_schema: { type: 'object', properties: { sku: { type: 'string', description: 'Product SKU, e.g. NV-X5-256' } }, required: ['sku'] }, webhook_url: 'https://api.novaelectronics.pk/hooks/stock', enabled: true },
+        { id: 'tool_order', name: 'create_cod_order', description: 'Create a cash-on-delivery order for the customer.', params_schema: { type: 'object', properties: { name: { type: 'string' }, phone: { type: 'string', description: 'Customer phone, e.g. +92 300 1234567' }, sku: { type: 'string' }, quantity: { type: 'integer', minimum: 1 } }, required: ['name', 'phone', 'sku'] }, webhook_url: 'https://api.novaelectronics.pk/hooks/order', enabled: true },
+        { id: 'tool_repair', name: 'book_repair_slot', description: 'Book a repair appointment at the Gulberg service center.', params_schema: { type: 'object', properties: { device: { type: 'string' }, issue: { type: 'string' }, date: { type: 'string', description: 'Preferred date, YYYY-MM-DD' } }, required: ['device', 'issue'] }, webhook_url: 'https://api.novaelectronics.pk/hooks/repair', enabled: false }
+      ],
+      actions: [
+        { created_at: mAgo(12), tool_name: 'check_stock', params: { sku: 'NV-X5-256' }, result: 'In stock — 23 units at Rs 84,999 (Gulberg warehouse)', duration_ms: 212 },
+        { created_at: mAgo(34), tool_name: 'create_cod_order', params: { name: 'Ahmed Raza', phone: '+92 300 1234567', sku: 'NV-VB2', quantity: 2 }, result: { order_id: 'NV-90412', total: 'Rs 18,998', status: 'confirmed', eta: '2-3 working days' }, duration_ms: 841 },
+        { created_at: mAgo(58), tool_name: 'check_stock', params: { sku: 'NV-SPM' }, result: 'Low stock — only 3 units left', duration_ms: 187 },
+        { created_at: mAgo(95), tool_name: 'create_cod_order', params: { name: 'Fatima Khan', phone: '+92 321 9876543', sku: 'NV-AB14', quantity: 1 }, result: { order_id: 'NV-90409', total: 'Rs 189,999', status: 'confirmed', eta: '2-3 working days' }, duration_ms: 1204 },
+        { created_at: mAgo(160), tool_name: 'check_stock', params: { sku: 'NV-BBG' }, result: 'In stock — 31 units at Rs 14,999', duration_ms: 198 },
+        { created_at: mAgo(240), tool_name: 'check_stock', params: { sku: 'NV-X5-128' }, result: 'Out of stock — restocking next week', duration_ms: 176 }
+      ],
+      unanswered: [
+        { id: 'q1', question: 'Do you have the Nova X5 in blue color?', page_url: 'https://novaelectronics.pk/', count: 4, answered: false, created_at: hAgo(2) },
+        { id: 'q2', question: 'Is there a student discount on laptops?', page_url: 'https://novaelectronics.pk/products/audio', count: 2, answered: false, created_at: hAgo(5) },
+        { id: 'q3', question: 'Do you deliver to Multan?', page_url: 'https://novaelectronics.pk/', count: 3, answered: false, created_at: hAgo(26) },
+        { id: 'q4', question: 'Can I pay with a debit card on delivery?', page_url: 'https://novaelectronics.pk/', count: 6, answered: true, created_at: dAgo(2) }
+      ],
+      analytics: {
+        top_questions: [
+          { question: 'What is the delivery time to Lahore?', count: 28 },
+          { question: 'Do you offer installments?', count: 21 },
+          { question: 'Is the AeroBook Pro good for video editing?', count: 17 },
+          { question: 'What is your return policy?', count: 15 },
+          { question: 'Do you have PS5 controllers?', count: 9 }
+        ],
+        tool_calls: [
+          { tool_name: 'check_stock', count: 132 },
+          { tool_name: 'create_cod_order', count: 48 },
+          { tool_name: 'book_repair_slot', count: 6 }
+        ],
+        unresolved_conversations: 7, total_conversations: 342
+      }
+    },
+    {
+      id: 't_gulberg', name: 'Gulberg Dental Care', website: 'https://gulbergdental.pk',
+      brand_color: '#0d9488', created_at: dAgo(6),
+      welcome_message: 'Welcome to Gulberg Dental Care! Ask about treatments, timings, or bookings.',
+      trigger: { enabled: false, pages: [], delay_sec: 10, message: '' },
+      pages: [],
+      tools: [
+        { id: 'tool_appt', name: 'book_appointment', description: 'Book a dental appointment with a preferred doctor and time slot.', params_schema: { type: 'object', properties: { doctor: { type: 'string' }, date: { type: 'string', description: 'Preferred date, YYYY-MM-DD' }, phone: { type: 'string' } }, required: ['date', 'phone'] }, webhook_url: 'https://api.gulbergdental.pk/hooks/appointments', enabled: true }
+      ],
+      actions: [],
+      unanswered: [
+        { id: 'q9', question: 'Do you offer teeth whitening, and what does it cost?', page_url: 'https://gulbergdental.pk/', count: 2, answered: false, created_at: hAgo(7) }
+      ],
+      analytics: {
+        top_questions: [
+          { question: 'What are your clinic timings?', count: 12 },
+          { question: 'Do you do root canals?', count: 8 }
+        ],
+        tool_calls: [ { tool_name: 'book_appointment', count: 19 } ],
+        unresolved_conversations: 2, total_conversations: 41
+      }
+    }
+  ]
+};
+
+const DEMO_CATALOG_PRODUCTS = [
+  { name: 'PulsePhone A1', price: 'Rs 32,999', specs: ['6.5" IPS 90Hz', '8GB RAM / 128GB', '5000mAh battery'], stock: 'In stock (40)' },
+  { name: 'PulsePhone A1 Pro', price: 'Rs 44,999', specs: ['6.7" AMOLED 120Hz', '12GB RAM / 256GB', '67W fast charging'], stock: 'In stock (25)' },
+  { name: 'VoltTab S8', price: 'Rs 54,999', specs: ['11" 2K display', '8GB RAM / 256GB', 'Stylus included'], stock: 'In stock (18)' },
+  { name: 'AeroWatch Fit', price: 'Rs 12,999', specs: ['1.85" AMOLED', 'SpO2 + heart-rate', '10-day battery'], stock: 'In stock (52)' },
+  { name: 'AeroWatch Ultra', price: 'Rs 21,999', specs: ['2.0" AMOLED', 'GPS + LTE', 'ECG sensor'], stock: 'Low stock (5)' },
+  { name: 'BassPods Lite', price: 'Rs 5,999', specs: ['ENC calls', '30-hour case battery', 'Bluetooth 5.3'], stock: 'In stock (80)' },
+  { name: 'BassPods Pro', price: 'Rs 11,999', specs: ['Hybrid ANC', 'Wireless charging', 'LDAC support'], stock: 'In stock (33)' },
+  { name: 'VoltCharge 65W', price: 'Rs 4,499', specs: ['65W GaN', '2x USB-C + 1x USB-A', 'Foldable plug'], stock: 'In stock (64)' },
+  { name: 'PowerBank 20000', price: 'Rs 6,999', specs: ['20000mAh', '22.5W fast charge', 'LED display'], stock: 'In stock (47)' },
+  { name: 'MechKeys 75', price: 'Rs 16,999', specs: ['Hot-swap switches', 'RGB backlight', 'Tri-mode connect'], stock: 'Low stock (6)' },
+  { name: 'SwiftMouse Pro', price: 'Rs 7,499', specs: ['26K DPI sensor', '90-hour battery', 'Ergonomic'], stock: 'In stock (38)' },
+  { name: 'ViewMon 27 4K', price: 'Rs 74,999', specs: ['27" 4K IPS', 'HDR400', 'USB-C 90W'], stock: 'In stock (9)' }
+];
+
+/* ---------------- mock backend (PREVIEW ONLY) ---------------- */
+const mockDB = JSON.parse(JSON.stringify(SAMPLE_DATA));
+let mockSeq = 100;
+const mockTenant = (id) => mockDB.tenants.find((t) => t.id === id);
+const tenantSummary = (t) => ({ id: t.id, name: t.name, website: t.website, brand_color: t.brand_color, created_at: t.created_at });
+const tenantDetail = (t) => ({ id: t.id, name: t.name, website: t.website, brand_color: t.brand_color, created_at: t.created_at, welcome_message: t.welcome_message, trigger: t.trigger });
+
+function mockApi(method, path, body) {
+  const seg = (re) => path.match(re);
+  let m;
+  // tenants collection
+  if (path === '/api/tenants' && method === 'GET') return mockDB.tenants.map(tenantSummary);
+  if (path === '/api/tenants' && method === 'POST') {
+    const t = {
+      id: 't_' + (mockSeq++), name: body.name, website: body.website, brand_color: body.brand_color || '#6366f1',
+      created_at: new Date().toISOString(), welcome_message: body.welcome_message || '',
+      trigger: body.trigger || { enabled: false, pages: [], delay_sec: 10, message: '' },
+      pages: [], tools: [], actions: [], unanswered: [],
+      analytics: { top_questions: [], tool_calls: [], unresolved_conversations: 0, total_conversations: 0 }
+    };
+    mockDB.tenants.push(t);
+    return tenantDetail(t);
+  }
+  // ingest
+  if ((m = seg(/^\/api\/tenants\/([^/]+)\/ingest$/)) && method === 'POST') {
+    const t = mockTenant(m[1]); if (!t) throw new Error('Tenant not found');
+    if (!t._ingestedOnce) {
+      t._ingestedOnce = true;
+      const base = (t.website || '').replace(/\/$/, '');
+      t.pages.push({
+        url: base + '/', title: t.name + ' — Home', crawled_at: new Date().toISOString(),
+        extracted: {
+          products: [{ name: 'Sample Product', price: 'Rs 9,999', specs: ['Demo spec one', 'Demo spec two'], stock: 'In stock (10)' }],
+          faqs: [{ q: 'What are your opening hours?', a: 'Demo answer — replace after a real crawl.' }],
+          policies: [{ type: 'Shipping', text: 'Demo policy — replace after a real crawl.' }]
+        }
+      });
+      t.pages.push({
+        url: base + '/about', title: 'About — ' + t.name, crawled_at: new Date().toISOString(),
+        extracted: { products: [], faqs: [{ q: 'Where are you located?', a: 'Demo answer — replace after a real crawl.' }], policies: [] }
+      });
+    }
+    return { pages_crawled: 14, products_found: 32 };
+  }
+  // upload
+  if ((m = seg(/^\/api\/tenants\/([^/]+)\/upload$/)) && method === 'POST') {
+    const t = mockTenant(m[1]); if (!t) throw new Error('Tenant not found');
+    return { files_indexed: (body && body.__files) || 0 };
+  }
+  // seed demo
+  if ((m = seg(/^\/api\/tenants\/([^/]+)\/seed-demo$/)) && method === 'POST') {
+    const t = mockTenant(m[1]); if (!t) throw new Error('Tenant not found');
+    t.pages = t.pages.filter((p) => p.url !== 'demo://catalog');
+    t.pages.push({
+      url: 'demo://catalog', title: 'Demo Catalog — 12 products', crawled_at: new Date().toISOString(),
+      extracted: { products: DEMO_CATALOG_PRODUCTS.map((p) => ({ ...p, specs: [...p.specs] })), faqs: [], policies: [] }
+    });
+    return { ok: true, products: 12 };
+  }
+  // pages
+  if ((m = seg(/^\/api\/tenants\/([^/]+)\/pages$/)) && method === 'GET') {
+    const t = mockTenant(m[1]); if (!t) throw new Error('Tenant not found');
+    return t.pages;
+  }
+  // tools collection
+  if ((m = seg(/^\/api\/tenants\/([^/]+)\/tools$/)) && method === 'GET') {
+    const t = mockTenant(m[1]); if (!t) throw new Error('Tenant not found');
+    return t.tools;
+  }
+  if ((m = seg(/^\/api\/tenants\/([^/]+)\/tools$/)) && method === 'POST') {
+    const t = mockTenant(m[1]); if (!t) throw new Error('Tenant not found');
+    const tool = { id: 'tool_' + (mockSeq++), name: body.name, description: body.description, params_schema: body.params_schema, webhook_url: body.webhook_url, enabled: body.enabled !== false };
+    t.tools.push(tool);
+    return tool;
+  }
+  // single tool
+  if ((m = seg(/^\/api\/tenants\/([^/]+)\/tools\/([^/]+)$/)) && method === 'PUT') {
+    const t = mockTenant(m[1]); if (!t) throw new Error('Tenant not found');
+    const tool = t.tools.find((x) => x.id === m[2]); if (!tool) throw new Error('Tool not found');
+    Object.assign(tool, { name: body.name, description: body.description, params_schema: body.params_schema, webhook_url: body.webhook_url, enabled: body.enabled });
+    return tool;
+  }
+  if ((m = seg(/^\/api\/tenants\/([^/]+)\/tools\/([^/]+)$/)) && method === 'DELETE') {
+    const t = mockTenant(m[1]); if (!t) throw new Error('Tenant not found');
+    t.tools = t.tools.filter((x) => x.id !== m[2]);
+    return { ok: true };
+  }
+  // actions
+  if ((m = seg(/^\/api\/tenants\/([^/]+)\/actions/)) && method === 'GET') {
+    const t = mockTenant(m[1]); if (!t) throw new Error('Tenant not found');
+    return t.actions.slice(0, 50);
+  }
+  // unanswered
+  if ((m = seg(/^\/api\/tenants\/([^/]+)\/unanswered$/)) && method === 'GET') {
+    const t = mockTenant(m[1]); if (!t) throw new Error('Tenant not found');
+    return t.unanswered;
+  }
+  if ((m = seg(/^\/api\/tenants\/([^/]+)\/unanswered\/([^/]+)\/answer$/)) && method === 'POST') {
+    const t = mockTenant(m[1]); if (!t) throw new Error('Tenant not found');
+    const q = t.unanswered.find((x) => x.id === m[2]); if (!q) throw new Error('Question not found');
+    q.answered = true; q.answer_text = body.answer;
+    return { ok: true };
+  }
+  // analytics
+  if ((m = seg(/^\/api\/tenants\/([^/]+)\/analytics$/)) && method === 'GET') {
+    const t = mockTenant(m[1]); if (!t) throw new Error('Tenant not found');
+    return t.analytics;
+  }
+  // tenant detail / update / delete
+  if ((m = seg(/^\/api\/tenants\/([^/]+)$/)) && method === 'GET') {
+    const t = mockTenant(m[1]); if (!t) throw new Error('Tenant not found');
+    return tenantDetail(t);
+  }
+  if ((m = seg(/^\/api\/tenants\/([^/]+)$/)) && method === 'PUT') {
+    const t = mockTenant(m[1]); if (!t) throw new Error('Tenant not found');
+    Object.assign(t, { name: body.name, website: body.website, brand_color: body.brand_color, welcome_message: body.welcome_message, trigger: body.trigger });
+    return tenantDetail(t);
+  }
+  if ((m = seg(/^\/api\/tenants\/([^/]+)$/)) && method === 'DELETE') {
+    mockDB.tenants = mockDB.tenants.filter((t) => t.id !== m[1]);
+    return { ok: true };
+  }
+  throw new Error('Unknown endpoint: ' + method + ' ' + path);
+}
+
+/* ---------------- API client (same origin) ---------------- */
+async function api(method, path, body) {
+  if (PREVIEW) { await new Promise((r) => setTimeout(r, 180)); return mockApi(method, path, body); }
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  let res;
+  try { res = await fetch(path, opts); }
+  catch (e) { throw new Error('Network error — is the backend running on this origin?'); }
+  if (!res.ok) {
+    let msg = 'Request failed (' + res.status + ')';
+    try { const j = await res.json(); if (j && (j.error || j.message)) msg = j.error || j.message; } catch (e) {}
+    throw new Error(msg);
+  }
+  if (res.status === 204) return {};
+  return res.json();
+}
+const apiGet = (p) => api('GET', p);
+const apiPost = (p, b) => api('POST', p, b);
+const apiPut = (p, b) => api('PUT', p, b);
+const apiDel = (p) => api('DELETE', p);
+
+async function apiUpload(tenantId, files) {
+  if (PREVIEW) { await new Promise((r) => setTimeout(r, 300)); return mockApi('POST', '/api/tenants/' + tenantId + '/upload', { __files: files.length }); }
+  const fd = new FormData();
+  Array.from(files).forEach((f) => fd.append('files', f));
+  let res;
+  try { res = await fetch('/api/tenants/' + tenantId + '/upload', { method: 'POST', body: fd }); }
+  catch (e) { throw new Error('Network error — is the backend running on this origin?'); }
+  if (!res.ok) throw new Error('Upload failed (' + res.status + ')');
+  return res.json();
+}
+
+/* ---------------- state ---------------- */
+const state = {
+  tenants: [],
+  currentTenantId: null,
+  tenantDetail: null,
+  // deep-link: ?tab=tools|sources|actions|unanswered|analytics|embed
+  currentTab: new URLSearchParams(window.location.search).get('tab') || 'sources',
+  pages: [], tools: [], actions: [], unanswered: [], analytics: null,
+  loading: false,
+  loadError: null,
+  crawling: false,
+  uploading: false,
+  checkedSteps: new Set()
+};
+const TABS = [
+  { id: 'sources', label: 'Data Sources' },
+  { id: 'tools', label: 'Custom Tools' },
+  { id: 'actions', label: 'Actions Log' },
+  { id: 'unanswered', label: 'Unanswered' },
+  { id: 'analytics', label: 'Analytics' },
+  { id: 'embed', label: 'Embed' }
+];
+const currentTenant = () => state.tenants.find((t) => t.id === state.currentTenantId) || null;
+const openUnansweredCount = () => state.unanswered.filter((q) => !q.answered).length;
+
+/* ---------------- toast ---------------- */
+const TOAST_STYLE = {
+  success: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+  error: 'border-red-200 bg-red-50 text-red-900',
+  info: 'border-slate-200 bg-white text-slate-700'
+};
+const TOAST_ICON = {
+  success: '<svg class="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+  error: '<svg class="mt-0.5 h-5 w-5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>',
+  info: '<svg class="mt-0.5 h-5 w-5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+};
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = 'toast-in pointer-events-auto flex items-start gap-3 rounded-xl border px-4 py-3 shadow-xl ' + (TOAST_STYLE[type] || TOAST_STYLE.info);
+  el.innerHTML = TOAST_ICON[type] + '<div class="text-sm font-medium leading-snug">' + esc(msg) + '</div>';
+  $('#toast-root').appendChild(el);
+  setTimeout(() => { el.style.transition = 'opacity .3s, transform .3s'; el.style.opacity = '0'; el.style.transform = 'translateX(16px)'; setTimeout(() => el.remove(), 320); }, 4200);
+}
+
+/* ---------------- modal ---------------- */
+function openModal(html, maxW = 'max-w-lg') {
+  $('#modal-root').innerHTML =
+    '<div class="fixed inset-0 z-50 flex items-center justify-center p-4">' +
+      '<div class="absolute inset-0 bg-slate-950/55 backdrop-blur-[2px]" onclick="UI.closeModal()"></div>' +
+      '<div class="fade-in relative max-h-[90vh] w-full ' + maxW + ' overflow-y-auto rounded-2xl bg-white shadow-2xl">' + html + '</div>' +
+    '</div>';
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() { $('#modal-root').innerHTML = ''; document.body.style.overflow = ''; }
+function confirmAction({ title, message, okLabel = 'Delete' }) {
+  return new Promise((resolve) => {
+    UI._confirmResolve = (v) => { closeModal(); resolve(v); };
+    openModal(
+      '<div class="p-6">' +
+        '<div class="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-red-100">' +
+          '<svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>' +
+        '</div>' +
+        '<h3 class="text-center text-base font-bold text-slate-900">' + esc(title) + '</h3>' +
+        '<p class="mt-2 text-center text-sm text-slate-500">' + esc(message) + '</p>' +
+        '<div class="mt-6 flex justify-end gap-3">' +
+          '<button class="btn-secondary" onclick="UI._confirmResolve(false)">Cancel</button>' +
+          '<button class="btn-primary !bg-red-600 hover:!bg-red-700 active:!bg-red-800" onclick="UI._confirmResolve(true)">' + esc(okLabel) + '</button>' +
+        '</div>' +
+      '</div>', 'max-w-sm');
+  });
+}
+
+/* ---------------- shared bits ---------------- */
+function spinner(cls = 'h-4 w-4') {
+  return '<svg class="' + cls + ' spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>';
+}
+function loadingBlock(label = 'Loading…') {
+  return '<div class="flex items-center justify-center gap-3 py-20 text-sm text-slate-500">' + spinner('h-5 w-5 text-indigo-600') + esc(label) + '</div>';
+}
+function errorBlock(message, retryFn) {
+  return '<div class="card mx-auto mt-10 max-w-md p-8 text-center">' +
+    '<div class="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-red-100"><svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>' +
+    '<div class="font-semibold text-slate-900">Something went wrong</div>' +
+    '<div class="mt-1 text-sm text-slate-500">' + esc(message) + '</div>' +
+    (retryFn ? '<button class="btn-secondary mt-4" onclick="' + retryFn + '">Retry</button>' : '') +
+  '</div>';
+}
+function emptyState({ icon, title, desc, action }) {
+  return '<div class="rounded-xl border-2 border-dashed border-slate-200 bg-white/60 px-6 py-12 text-center">' +
+    '<div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">' + icon + '</div>' +
+    '<div class="text-sm font-bold text-slate-800">' + esc(title) + '</div>' +
+    '<div class="mx-auto mt-1 max-w-sm text-sm text-slate-500">' + esc(desc) + '</div>' +
+    (action ? '<div class="mt-4 flex items-center justify-center gap-3">' + action + '</div>' : '') +
+  '</div>';
+}
+const ICON_GLOBE = '<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.7 0 3-4 3-9s-1.3-9-3-9m0 18c-1.7 0-3-4-3-9s1.3-9 3-9m-9 9a9 9 0 019-9"/></svg>';
+const ICON_WRENCH = '<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14.7 6.3a4.5 4.5 0 00-6 6L3 18l3 3 5.7-5.7a4.5 4.5 0 006-6L14 13l-3-3 3.7-3.7z"/></svg>';
+const ICON_LIST = '<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10"/></svg>';
+const ICON_Q = '<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M8.3 10.5a3.5 3.5 0 115.9 2.6c-.8.8-2.2 1.4-2.2 3.4m0 3.5h.01"/></svg>';
+function toggleSwitch(checked, onchange) {
+  return '<label class="relative inline-flex cursor-pointer items-center">' +
+    '<input type="checkbox" class="peer sr-only"' + (checked ? ' checked' : '') + ' onchange="' + onchange + '">' +
+    '<span class="block h-6 w-11 rounded-full bg-slate-300 transition-colors peer-checked:bg-indigo-600"></span>' +
+    '<span class="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5"></span>' +
+  '</label>';
+}
+
+/* ---------------- chrome render ---------------- */
+function renderSidebar() {
+  const list = $('#tenant-list');
+  $('#tenant-count').textContent = state.tenants.length;
+  if (!state.tenants.length) {
+    list.innerHTML = '<div class="px-3 py-6 text-center text-xs text-slate-500">No tenants yet.<br>Create your first one below.</div>';
+    return;
+  }
+  list.innerHTML = state.tenants.map((t) => {
+    const active = t.id === state.currentTenantId;
+    return '<button onclick="UI.selectTenant(\'' + esc(t.id) + '\')" class="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition ' +
+      (active ? 'bg-white/10 ring-1 ring-white/10' : 'hover:bg-white/5') + '">' +
+      '<span class="h-3.5 w-3.5 shrink-0 rounded-full ring-2 ring-white/20" style="background:' + esc(t.brand_color || '#6366f1') + '"></span>' +
+      '<span class="min-w-0 flex-1">' +
+        '<span class="block truncate text-sm font-semibold ' + (active ? 'text-white' : 'text-slate-200') + '">' + esc(t.name) + '</span>' +
+        '<span class="block truncate text-[11px] text-slate-500">' + esc(hostOf(t.website)) + '</span>' +
+      '</span>' +
+      (active ? '<span class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400 pulse-dot"></span>' : '') +
+    '</button>';
+  }).join('');
+}
+
+function renderHeader() {
+  const h = $('#tenant-header');
+  const t = currentTenant();
+  const d = state.tenantDetail;
+  if (!t) {
+    h.innerHTML = '<div class="flex items-center gap-3 px-4 py-4 sm:px-6">' +
+      '<button class="btn-secondary !px-2.5 lg:hidden" onclick="UI.toggleSidebar()"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg></button>' +
+      '<div class="text-sm font-semibold text-slate-500">Select a tenant to manage</div></div>';
+    return;
+  }
+  h.innerHTML =
+    '<div class="flex flex-wrap items-center gap-3 px-4 py-4 sm:px-6">' +
+      '<button class="btn-secondary !px-2.5 lg:hidden" onclick="UI.toggleSidebar()"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg></button>' +
+      '<span class="h-5 w-5 rounded-full ring-2 ring-slate-200" style="background:' + esc(t.brand_color || '#6366f1') + '" title="Brand color"></span>' +
+      '<div class="min-w-0">' +
+        '<div class="flex items-center gap-2"><h1 class="truncate text-lg font-bold text-slate-900">' + esc(t.name) + '</h1></div>' +
+        '<a href="' + esc(t.website) + '" target="_blank" rel="noopener" class="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 hover:underline">' +
+          esc(t.website) +
+          '<svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>' +
+        '</a>' +
+      '</div>' +
+      '<div class="ml-auto flex items-center gap-2">' +
+        (d && d.trigger && d.trigger.enabled ? '<span class="badge bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Proactive trigger on</span>' : '') +
+        '<button class="btn-secondary !py-1.5" onclick="UI.openTenantModal(true)">' +
+          '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.4-9.4a2 2 0 112.8 2.8L12 15l-4 1 1-4 8.4-8.4z"/></svg>' +
+          '<span class="hidden sm:inline">Edit</span>' +
+        '</button>' +
+        '<button class="btn-danger-ghost" onclick="UI.deleteTenant()">' +
+          '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.9 12.1A2 2 0 0116.1 21H7.9a2 2 0 01-2-1.9L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16"/></svg>' +
+          '<span class="hidden sm:inline">Delete</span>' +
+        '</button>' +
+      '</div>' +
+    '</div>';
+}
+
+function renderTabs() {
+  const bar = $('#tabbar');
+  const t = currentTenant();
+  if (!t) { bar.innerHTML = ''; return; }
+  bar.innerHTML = '<div class="flex gap-1 overflow-x-auto">' + TABS.map((tab) => {
+    const active = tab.id === state.currentTab;
+    const badge = tab.id === 'unanswered' && openUnansweredCount() > 0
+      ? '<span class="ml-1.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-700">' + openUnansweredCount() + '</span>' : '';
+    return '<button onclick="UI.setTab(\'' + tab.id + '\')" class="tab-btn ' + (active ? '!text-indigo-700 font-semibold' : '') + '">' +
+      esc(tab.label) + badge +
+      (active ? '<span class="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-indigo-600"></span>' : '') +
+    '</button>';
+  }).join('') + '</div>';
+}
+
+function renderContent() {
+  const c = $('#content');
+  if (!currentTenant()) {
+    c.innerHTML = '<div class="mx-auto mt-16 max-w-md text-center">' +
+      '<div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-card">' +
+        '<svg class="h-8 w-8 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>' +
+      '</div>' +
+      '<h2 class="text-xl font-bold text-slate-900">Welcome to Agent Console</h2>' +
+      '<p class="mt-2 text-sm text-slate-500">Create a tenant to start crawling websites, wiring up webhook tools, and embedding the AI chat widget.</p>' +
+      '<button class="btn-primary mt-5" onclick="UI.openTenantModal()">Create your first tenant</button>' +
+    '</div>';
+    return;
+  }
+  if (state.loading) { c.innerHTML = loadingBlock('Loading tenant data…'); return; }
+  if (state.loadError) { c.innerHTML = errorBlock(state.loadError, 'UI.selectTenant(\'' + esc(state.currentTenantId) + '\')'); return; }
+  const r = { sources: renderSources, tools: renderTools, actions: renderActions, unanswered: renderUnanswered, analytics: renderAnalytics, embed: renderEmbed }[state.currentTab];
+  c.innerHTML = '<div class="fade-in mx-auto max-w-5xl">' + r() + '</div>';
+}
+
+/* ================= DATA SOURCES TAB ================= */
+function stockBadge(stock) {
+  const s = String(stock || '').toLowerCase();
+  const cls = s.includes('out') ? 'bg-red-50 text-red-700 ring-red-200'
+    : s.includes('low') ? 'bg-amber-50 text-amber-700 ring-amber-200'
+    : 'bg-emerald-50 text-emerald-700 ring-emerald-200';
+  return '<span class="badge ring-1 ' + cls + '">' + esc(stock || '—') + '</span>';
+}
+function productCard(p) {
+  const specs = (p.specs || []).map((s) => '<li class="flex items-start gap-1.5"><span class="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-300"></span><span>' + esc(s) + '</span></li>').join('');
+  return '<div class="rounded-lg border border-slate-200 bg-slate-50/60 p-3">' +
+    '<div class="flex items-start justify-between gap-2">' +
+      '<div class="text-sm font-semibold text-slate-900">' + esc(p.name) + '</div>' +
+    '</div>' +
+    '<div class="mt-1 flex flex-wrap items-center gap-2">' +
+      '<span class="font-mono text-sm font-semibold text-indigo-700">' + esc(p.price) + '</span>' + stockBadge(p.stock) +
+    '</div>' +
+    (specs ? '<ul class="mt-2 space-y-1 text-xs text-slate-500">' + specs + '</ul>' : '') +
+  '</div>';
+}
+function pageCard(p) {
+  const ex = p.extracted || { products: [], faqs: [], policies: [] };
+  const products = ex.products || [], faqs = ex.faqs || [], policies = ex.policies || [];
+  const isDemo = String(p.url).startsWith('demo://');
+  const sectionTitle = (label, n) => '<div class="mb-2 flex items-center gap-2"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">' + label + '</span><span class="rounded-full bg-slate-100 px-1.5 text-[10px] font-bold text-slate-500">' + n + '</span></div>';
+  return '<div class="card overflow-hidden">' +
+    '<div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/50 px-5 py-3.5">' +
+      '<div class="min-w-0">' +
+        '<div class="truncate text-sm font-bold text-slate-900">' + esc(p.title || p.url) + '</div>' +
+        (isDemo
+          ? '<div class="font-mono text-xs text-slate-400">seeded demo catalog</div>'
+          : '<a href="' + esc(p.url) + '" target="_blank" rel="noopener" class="truncate font-mono text-xs text-indigo-600 hover:underline">' + esc(p.url) + '</a>') +
+      '</div>' +
+      '<div class="text-right text-[11px] text-slate-400">Crawled<br><span class="font-semibold text-slate-500">' + esc(timeAgo(p.crawled_at)) + '</span></div>' +
+    '</div>' +
+    '<div class="grid gap-6 p-5 md:grid-cols-3">' +
+      '<div>' + sectionTitle('Products', products.length) +
+        (products.length ? '<div class="space-y-2.5">' + products.map(productCard).join('') + '</div>' : '<div class="text-xs italic text-slate-400">None extracted</div>') +
+      '</div>' +
+      '<div>' + sectionTitle('FAQs', faqs.length) +
+        (faqs.length ? '<div class="space-y-3">' + faqs.map((f) =>
+          '<div class="rounded-lg border border-slate-200 p-3"><div class="text-[13px] font-semibold text-slate-800">' + esc(f.q) + '</div><div class="mt-1 text-xs leading-relaxed text-slate-500">' + esc(f.a) + '</div></div>'
+        ).join('') : '<div class="text-xs italic text-slate-400">None extracted</div>') +
+      '</div>' +
+      '<div>' + sectionTitle('Policies', policies.length) +
+        (policies.length ? '<div class="space-y-3">' + policies.map((pl) =>
+          '<div class="rounded-lg border border-slate-200 p-3"><span class="badge bg-violet-50 text-violet-700 ring-1 ring-violet-200">' + esc(pl.type) + '</span><div class="mt-1.5 text-xs leading-relaxed text-slate-500">' + esc(pl.text) + '</div></div>'
+        ).join('') : '<div class="text-xs italic text-slate-400">None extracted</div>') +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+function renderSources() {
+  const t = currentTenant();
+  const pages = state.pages || [];
+  const totalProducts = pages.reduce((n, p) => n + ((p.extracted && p.extracted.products) || []).length, 0);
+  const totalFaqs = pages.reduce((n, p) => n + ((p.extracted && p.extracted.faqs) || []).length, 0);
+  let html =
+    '<div class="grid gap-5 lg:grid-cols-2">' +
+      // crawl card
+      '<div class="card p-5">' +
+        '<div class="flex items-center gap-3"><div class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">' + ICON_GLOBE + '</div>' +
+        '<div><h3 class="text-sm font-bold text-slate-900">Crawl website</h3><p class="text-xs text-slate-500">Fetch pages and extract products, FAQs &amp; policies into the knowledge base.</p></div></div>' +
+        '<form class="mt-4 flex gap-2" onsubmit="return UI.runCrawl(event)">' +
+          '<input id="crawl-url" class="input font-mono" type="url" required placeholder="https://example.com" value="' + esc(t.website) + '">' +
+          '<button type="submit" id="crawl-btn" class="btn-primary shrink-0" ' + (state.crawling ? 'disabled' : '') + '>' +
+            (state.crawling ? spinner() + 'Crawling…' : 'Crawl &amp; index') +
+          '</button>' +
+        '</form>' +
+        '<div id="crawl-result" class="mt-3"></div>' +
+      '</div>' +
+      // upload card
+      '<div class="card p-5">' +
+        '<div class="flex items-center gap-3"><div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50 text-violet-600"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.9A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg></div>' +
+        '<div><h3 class="text-sm font-bold text-slate-900">Upload documents</h3><p class="text-xs text-slate-500">PDF, TXT or Markdown files are indexed into the same knowledge base.</p></div></div>' +
+        '<label class="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/60 px-4 py-6 text-center transition hover:border-indigo-300 hover:bg-indigo-50/40">' +
+          '<svg class="mb-1 h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6m-5 0v6m0 0l-2-2m2 2l2-2M7 16a4 4 0 01-.88-7.9A5 5 0 1115.9 6L16 6a5 5 0 011 9.9"/></svg>' +
+          '<span class="text-sm font-medium text-slate-600">' + (state.uploading ? 'Uploading…' : 'Drop files here or <span class="text-indigo-600 underline">browse</span>') + '</span>' +
+          '<span class="mt-0.5 text-[11px] text-slate-400">PDF · TXT · MD — multiple files supported</span>' +
+          '<input type="file" class="hidden" multiple accept=".pdf,.txt,.md,text/plain,text/markdown,application/pdf" onchange="UI.uploadFiles(this)" ' + (state.uploading ? 'disabled' : '') + '>' +
+        '</label>' +
+        '<div id="upload-result" class="mt-3"></div>' +
+      '</div>' +
+    '</div>';
+  // summary strip
+  if (pages.length) {
+    html += '<div class="mt-5 flex flex-wrap items-center gap-2 text-xs text-slate-500">' +
+      '<span class="badge bg-slate-900 text-white">' + num(pages.length) + ' pages</span>' +
+      '<span class="badge bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200">' + num(totalProducts) + ' products</span>' +
+      '<span class="badge bg-violet-50 text-violet-700 ring-1 ring-violet-200">' + num(totalFaqs) + ' FAQs</span>' +
+      '<span class="ml-auto">Last crawl: ' + esc(timeAgo(pages[0] && pages[0].crawled_at)) + '</span>' +
+    '</div>';
+  }
+  html += '<div class="mt-5 space-y-5">';
+  if (!pages.length) {
+    html += emptyState({
+      icon: ICON_GLOBE, title: 'No pages crawled yet',
+      desc: 'Crawl the website above to build the knowledge base, or seed a demo electronics catalog to explore the dashboard.',
+      action: '<button class="btn-secondary" onclick="UI.seedDemo()">Seed demo catalog</button>'
+    });
+  } else {
+    html += pages.map(pageCard).join('');
+  }
+  html += '</div>';
+  return html;
+}
+
+/* ================= CUSTOM TOOLS TAB ================= */
+function renderTools() {
+  const tools = state.tools || [];
+  let html =
+    '<div class="rounded-xl border border-indigo-200/70 bg-gradient-to-br from-indigo-50 to-violet-50/60 p-4 sm:p-5">' +
+      '<div class="flex items-start gap-3">' +
+        '<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-indigo-600 shadow-sm ring-1 ring-indigo-100">' + ICON_WRENCH + '</div>' +
+        '<div class="text-sm leading-relaxed text-slate-600">' +
+          '<span class="font-bold text-slate-900">How webhook tools work.</span> ' +
+          'When the agent needs an action mid-conversation, it POSTs ' +
+          '<code class="rounded bg-slate-900 px-1.5 py-0.5 font-mono text-[11px] text-emerald-300">{tool, params}</code> as JSON to your URL. ' +
+          'Your endpoint returns <code class="rounded bg-slate-900 px-1.5 py-0.5 font-mono text-[11px] text-emerald-300">{result}</code> — ' +
+          'the agent reports it back in chat. Every call is recorded in the <button class="font-semibold text-indigo-700 underline" onclick="UI.setTab(\'actions\')">Actions Log</button>.' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  html += '<div class="card mt-5 overflow-hidden">' +
+    '<div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">' +
+      '<div><h3 class="text-sm font-bold text-slate-900">Custom tools</h3><p class="text-xs text-slate-500">' + num(tools.length) + ' defined · ' + num(tools.filter((x) => x.enabled).length) + ' enabled</p></div>' +
+      '<button class="btn-primary" onclick="UI.openToolModal()"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M12 4v16m8-8H4"/></svg>Add tool</button>' +
+    '</div>';
+  if (!tools.length) {
+    html += '<div class="p-6">' + emptyState({
+      icon: ICON_WRENCH, title: 'No custom tools yet',
+      desc: 'Define webhook tools like check_stock or create_order so the agent can take real actions during conversations — not just answer questions.',
+      action: '<button class="btn-primary" onclick="UI.openToolModal()">Add your first tool</button>'
+    }) + '</div>';
+  } else {
+    html += '<div class="overflow-x-auto"><table class="w-full min-w-[760px]">' +
+      '<thead class="border-b border-slate-100 bg-slate-50/60"><tr><th class="th">Tool</th><th class="th">Description</th><th class="th">Webhook URL</th><th class="th">Enabled</th><th class="th text-right">Actions</th></tr></thead>' +
+      '<tbody class="divide-y divide-slate-100">';
+    tools.forEach((tool) => {
+      html += '<tr class="transition hover:bg-slate-50/70">' +
+        '<td class="td"><div class="font-mono text-[13px] font-semibold text-slate-900">' + esc(tool.name) + '</div>' +
+          '<details class="coll mt-1"><summary class="text-[11px] font-medium text-indigo-600 hover:underline">params schema</summary>' +
+          '<pre class="code mt-1.5 max-h-40 overflow-auto rounded-lg bg-slate-950 p-2.5 font-mono text-[11px] leading-relaxed text-slate-200">' + esc(prettyJSON(tool.params_schema)) + '</pre></details></td>' +
+        '<td class="td max-w-[280px]"><div class="text-[13px] leading-relaxed text-slate-600">' + esc(tool.description) + '</div></td>' +
+        '<td class="td"><div class="max-w-[220px] truncate font-mono text-xs text-slate-500" title="' + esc(tool.webhook_url) + '">' + esc(tool.webhook_url) + '</div></td>' +
+        '<td class="td">' + toggleSwitch(!!tool.enabled, 'UI.toggleTool(\'' + esc(tool.id) + '\', this.checked)') + '</td>' +
+        '<td class="td"><div class="flex justify-end gap-1">' +
+          '<button class="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" title="Edit tool" onclick="UI.openToolModal(\'' + esc(tool.id) + '\')"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.4-9.4a2 2 0 112.8 2.8L12 15l-4 1 1-4 8.4-8.4z"/></svg></button>' +
+          '<button class="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600" title="Delete tool" onclick="UI.deleteTool(\'' + esc(tool.id) + '\')"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.9 12.1A2 2 0 0116.1 21H7.9a2 2 0 01-2-1.9L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16"/></svg></button>' +
+        '</div></td>' +
+      '</tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+/* ================= ACTIONS LOG TAB ================= */
+function durationBadge(ms) {
+  ms = Number(ms || 0);
+  const cls = ms < 500 ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+    : ms < 2000 ? 'bg-amber-50 text-amber-700 ring-amber-200'
+    : 'bg-red-50 text-red-700 ring-red-200';
+  return '<span class="badge whitespace-nowrap font-mono ring-1 ' + cls + '">' + num(ms) + ' ms</span>';
+}
+function renderActions() {
+  const actions = state.actions || [];
+  let html = '<div class="card overflow-hidden">' +
+    '<div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4">' +
+      '<div><h3 class="text-sm font-bold text-slate-900">Actions log</h3><p class="text-xs text-slate-500">Every webhook tool call the agent made, with payloads and timing.</p></div>' +
+      '<span class="badge bg-slate-100 text-slate-600">last ' + num(Math.min(actions.length, 50)) + '</span>' +
+    '</div>';
+  if (!actions.length) {
+    html += '<div class="p-6">' + emptyState({
+      icon: ICON_LIST, title: 'No tool calls yet',
+      desc: 'Once the widget is live and the agent calls a webhook tool, each invocation will appear here with its params, result, and duration.'
+    }) + '</div>';
+  } else {
+    html += '<div class="overflow-x-auto"><table class="w-full min-w-[860px]">' +
+      '<thead class="border-b border-slate-100 bg-slate-950"><tr>' +
+        '<th class="th !text-slate-400">Time</th><th class="th !text-slate-400">Tool</th><th class="th !text-slate-400">Params</th><th class="th !text-slate-400">Result</th><th class="th !text-slate-400 text-right">Duration</th>' +
+      '</tr></thead><tbody class="divide-y divide-slate-100">';
+    actions.forEach((a) => {
+      const paramsPretty = prettyJSON(a.params);
+      const resultPretty = prettyJSON(a.result);
+      const resultShort = truncate(typeof a.result === 'string' ? a.result : JSON.stringify(a.result), 90);
+      html += '<tr class="transition hover:bg-slate-50/70">' +
+        '<td class="td whitespace-nowrap"><div class="font-mono text-xs text-slate-500" title="' + esc(fmtDate(a.created_at)) + '">' + esc(timeAgo(a.created_at)) + '</div></td>' +
+        '<td class="td"><span class="inline-block whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 font-mono text-xs font-semibold text-emerald-300">' + esc(a.tool_name) + '</span></td>' +
+        '<td class="td"><details class="coll max-w-[260px]"><summary class="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-1 font-mono text-[11px] font-medium text-indigo-700 ring-1 ring-indigo-100 hover:bg-indigo-100">view JSON</summary>' +
+          '<pre class="code mt-1.5 max-h-44 overflow-auto rounded-lg bg-slate-950 p-2.5 font-mono text-[11px] leading-relaxed text-slate-200">' + esc(paramsPretty) + '</pre></details></td>' +
+        '<td class="td"><details class="coll max-w-[300px]"><summary class="cursor-pointer font-mono text-xs text-slate-600 hover:text-slate-900" title="Click to expand">' + esc(resultShort) + '</summary>' +
+          '<pre class="code mt-1.5 max-h-44 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-2.5 font-mono text-[11px] leading-relaxed text-slate-700 ring-1 ring-slate-200">' + esc(resultPretty) + '</pre></details></td>' +
+        '<td class="td text-right">' + durationBadge(a.duration_ms) + '</td>' +
+      '</tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+/* ================= UNANSWERED TAB ================= */
+function renderUnanswered() {
+  const qs = state.unanswered || [];
+  const open = qs.filter((q) => !q.answered);
+  const done = qs.filter((q) => q.answered);
+  let html = '<div class="mb-5 flex flex-wrap items-center justify-between gap-3">' +
+    '<div><h3 class="text-base font-bold text-slate-900">Unanswered questions</h3>' +
+    '<p class="text-sm text-slate-500">Questions the agent could not answer. Answer once — the response is ingested into the knowledge base so it never misses again.</p></div>' +
+    '<span class="badge bg-red-50 text-red-700 ring-1 ring-red-200">' + num(open.length) + ' open</span>' +
+  '</div>';
+  if (!qs.length) {
+    html += emptyState({
+      icon: ICON_Q, title: 'Nothing unanswered',
+      desc: 'When visitors ask something outside the knowledge base, it will land here for you to answer.'
+    });
+    return html;
+  }
+  const card = (q) => {
+    if (q.answered) {
+      return '<div class="card border-slate-200 bg-slate-50 p-5 opacity-70">' +
+        '<div class="flex flex-wrap items-start justify-between gap-2">' +
+          '<div class="text-sm font-semibold text-slate-500 line-through decoration-slate-300">' + esc(q.question) + '</div>' +
+          '<span class="badge bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Answered</span>' +
+        '</div>' +
+        '<div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">' +
+          '<span class="badge bg-slate-100 text-slate-500">asked ' + num(q.count) + '×</span>' +
+          '<span class="truncate font-mono">' + esc(q.page_url) + '</span>' +
+          '<span>first asked ' + esc(timeAgo(q.created_at)) + '</span>' +
+        '</div>' +
+        (q.answer_text ? '<div class="mt-3 rounded-lg bg-white p-3 text-[13px] leading-relaxed text-slate-600 ring-1 ring-slate-200"><span class="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-400">Ingested answer</span>' + esc(q.answer_text) + '</div>' : '') +
+      '</div>';
+    }
+    return '<div class="card p-5 ring-1 ring-amber-200/60">' +
+      '<div class="flex flex-wrap items-start justify-between gap-2">' +
+        '<div class="min-w-0 flex-1 text-[15px] font-semibold leading-snug text-slate-900">“' + esc(q.question) + '”</div>' +
+        '<span class="badge shrink-0 bg-amber-50 text-amber-800 ring-1 ring-amber-200">asked ' + num(q.count) + '×</span>' +
+      '</div>' +
+      '<div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">' +
+        '<a href="' + esc(q.page_url) + '" target="_blank" rel="noopener" class="truncate font-mono text-indigo-600 hover:underline">' + esc(q.page_url) + '</a>' +
+        '<span class="text-slate-400">first asked ' + esc(timeAgo(q.created_at)) + '</span>' +
+      '</div>' +
+      '<div class="mt-4">' +
+        '<label class="label" for="ans-' + esc(q.id) + '">Canonical answer</label>' +
+        '<textarea id="ans-' + esc(q.id) + '" rows="3" class="input" placeholder="Write the definitive answer the agent should give from now on…"></textarea>' +
+        '<div class="mt-3 flex justify-end">' +
+          '<button class="btn-primary" id="ansbtn-' + esc(q.id) + '" onclick="UI.answerQuestion(\'' + esc(q.id) + '\')">' +
+            '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>' +
+            'Answer &amp; ingest into knowledge base' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  };
+  html += '<div class="space-y-4">' + open.map(card).join('') + '</div>';
+  if (done.length) {
+    html += '<div class="mb-3 mt-8 text-[11px] font-bold uppercase tracking-wider text-slate-400">Resolved (' + done.length + ')</div>' +
+      '<div class="space-y-4">' + done.map(card).join('') + '</div>';
+  }
+  return html;
+}
+
+/* ================= ANALYTICS TAB ================= */
+function statCard({ label, value, sub, icon, tint }) {
+  return '<div class="card p-5"><div class="flex items-start justify-between">' +
+    '<div><div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">' + esc(label) + '</div>' +
+    '<div class="mt-1 text-3xl font-extrabold tracking-tight text-slate-900">' + esc(value) + '</div>' +
+    (sub ? '<div class="mt-1 text-xs text-slate-500">' + esc(sub) + '</div>' : '') + '</div>' +
+    '<div class="flex h-10 w-10 items-center justify-center rounded-xl ' + tint + '">' + icon + '</div>' +
+  '</div></div>';
+}
+function renderAnalytics() {
+  const a = state.analytics || { top_questions: [], tool_calls: [], unresolved_conversations: 0, total_conversations: 0 };
+  const topQ = a.top_questions || [], toolCalls = a.tool_calls || [];
+  const maxTool = Math.max(1, ...toolCalls.map((t) => t.count));
+  const resolutionRate = a.total_conversations ? Math.round(((a.total_conversations - a.unresolved_conversations) / a.total_conversations) * 100) : 0;
+  let html = '<div class="grid gap-4 sm:grid-cols-3">' +
+    statCard({ label: 'Total conversations', value: num(a.total_conversations), sub: 'all time', tint: 'bg-indigo-50 text-indigo-600',
+      icon: '<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>' }) +
+    statCard({ label: 'Unresolved', value: num(a.unresolved_conversations), sub: resolutionRate + '% resolution rate', tint: 'bg-amber-50 text-amber-600',
+      icon: '<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>' }) +
+    statCard({ label: 'Unanswered questions', value: num(openUnansweredCount()), sub: 'awaiting your answer', tint: 'bg-red-50 text-red-600',
+      icon: '<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.3 10.5a3.5 3.5 0 115.9 2.6c-.8.8-2.2 1.4-2.2 3.4m0 3.5h.01"/></svg>' }) +
+  '</div>';
+  html += '<div class="mt-5 grid gap-5 lg:grid-cols-2">' +
+    // top questions
+    '<div class="card p-5"><h3 class="text-sm font-bold text-slate-900">Top questions</h3><p class="mb-4 text-xs text-slate-500">What visitors ask most — feed these into FAQs or tools.</p>';
+  if (!topQ.length) html += '<div class="py-6 text-center text-sm italic text-slate-400">No conversation data yet.</div>';
+  else {
+    html += '<ol class="space-y-3">' + topQ.map((q, i) =>
+      '<li class="flex items-center gap-3">' +
+        '<span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ' + (i < 3 ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500') + ' text-xs font-bold">' + (i + 1) + '</span>' +
+        '<span class="min-w-0 flex-1 truncate text-sm text-slate-700" title="' + esc(q.question) + '">' + esc(q.question) + '</span>' +
+        '<span class="badge shrink-0 bg-slate-100 font-mono text-slate-600">' + num(q.count) + '</span>' +
+      '</li>').join('') + '</ol>';
+  }
+  html += '</div>' +
+    // tool calls
+    '<div class="card p-5"><h3 class="text-sm font-bold text-slate-900">Tool calls</h3><p class="mb-4 text-xs text-slate-500">How often each webhook tool fires.</p>';
+  if (!toolCalls.length) html += '<div class="py-6 text-center text-sm italic text-slate-400">No tool calls yet.</div>';
+  else {
+    html += '<div class="space-y-4">' + toolCalls.map((tc) => {
+      const pct = Math.round((tc.count / maxTool) * 100);
+      return '<div><div class="mb-1.5 flex items-center justify-between gap-2">' +
+        '<span class="truncate font-mono text-[13px] font-semibold text-slate-800">' + esc(tc.tool_name) + '</span>' +
+        '<span class="shrink-0 font-mono text-xs text-slate-500">' + num(tc.count) + ' calls</span></div>' +
+        '<div class="h-2.5 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all" style="width:' + pct + '%"></div></div></div>';
+    }).join('') + '</div>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+/* ================= EMBED TAB ================= */
+function embedSnippet() {
+  const t = currentTenant();
+  const origin = (window.location.origin && window.location.origin !== 'null') ? window.location.origin : 'https://your-domain.com';
+  return '<script src="' + origin + '/widget.js" data-tenant="' + t.id + '" data-color="' + (t.brand_color || '#6366f1') + '" data-name="' + t.name.replace(/"/g, '&quot;') + '"><\/script>';
+}
+function renderEmbed() {
+  const t = currentTenant();
+  const steps = [
+    { title: 'Paste the snippet on your site', desc: 'Add it just before the closing </body> tag on every page — or once via Google Tag Manager.' },
+    { title: 'Crawl your content', desc: 'Run “Crawl & index” in Data Sources so the agent answers from your real pages, products, and policies.' },
+    { title: 'Wire up a webhook tool (optional)', desc: 'Define at least one custom tool — e.g. check_stock or create_order — so the agent can act, not just chat.' }
+  ];
+  let html = '<div class="card p-5 sm:p-6">' +
+    '<h3 class="text-sm font-bold text-slate-900">Embed the widget</h3>' +
+    '<p class="mt-1 text-sm text-slate-500">One script tag is all it takes. It inherits this tenant’s brand color, welcome message, and trigger settings.</p>' +
+    '<div class="relative mt-4">' +
+      '<pre id="embed-code" class="code overflow-x-auto rounded-xl bg-slate-950 p-4 pr-16 font-mono text-[12.5px] leading-relaxed text-emerald-300"></pre>' +
+      '<button class="btn-secondary absolute right-3 top-3 !px-3 !py-1.5 !text-xs" onclick="UI.copyEmbed()">' +
+        '<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>' +
+        '<span id="copy-label">Copy</span>' +
+      '</button>' +
+    '</div>' +
+    '<div class="mt-3 flex flex-wrap gap-2 text-xs">' +
+      '<span class="badge bg-slate-100 text-slate-600">data-tenant <span class="font-mono font-bold text-slate-800">' + esc(t.id) + '</span></span>' +
+      '<span class="badge bg-slate-100 text-slate-600">data-color <span class="font-mono font-bold" style="color:' + esc(t.brand_color || '#6366f1') + '">' + esc(t.brand_color || '#6366f1') + '</span></span>' +
+    '</div>' +
+  '</div>';
+  html += '<div class="card mt-5 p-5 sm:p-6"><h3 class="text-sm font-bold text-slate-900">Go-live checklist</h3><p class="mb-4 text-xs text-slate-500">Three steps to a live AI agent on ' + esc(hostOf(t.website)) + '.</p><div class="space-y-3">';
+  steps.forEach((s, i) => {
+    const done = state.checkedSteps.has(t.id + ':' + i);
+    html += '<button onclick="UI.toggleChecklist(' + i + ')" class="flex w-full items-start gap-3 rounded-xl border p-4 text-left transition ' + (done ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/30') + '">' +
+      '<span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition ' + (done ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 text-transparent') + '">' +
+        '<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>' +
+      '<span><span class="block text-sm font-semibold ' + (done ? 'text-slate-500 line-through' : 'text-slate-900') + '"><span class="mr-1.5 font-mono text-xs text-slate-400">' + (i + 1) + '</span>' + esc(s.title) + '</span>' +
+      '<span class="mt-0.5 block text-xs text-slate-500">' + esc(s.desc) + '</span></span>' +
+    '</button>';
+  });
+  html += '</div></div>';
+  // fill the code block as text (avoids HTML-escaping pitfalls)
+  setTimeout(() => { const el = $('#embed-code'); if (el) el.textContent = embedSnippet(); }, 0);
+  return html;
+}
+
+/* ================= TENANT MODAL ================= */
+const COLOR_SWATCHES = ['#6366f1', '#0d9488', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#22c55e', '#ec4899'];
+function renderTenantModal(edit) {
+  const d = edit ? state.tenantDetail : null;
+  const trig = (d && d.trigger) || { enabled: false, pages: [], delay_sec: 10, message: '' };
+  const color = (d && d.brand_color) || '#6366f1';
+  openModal(
+    '<div class="border-b border-slate-100 px-6 py-4"><h3 class="text-base font-bold text-slate-900">' + (edit ? 'Edit tenant' : 'New tenant') + '</h3>' +
+    '<p class="text-xs text-slate-500">' + (edit ? 'Update this tenant’s identity and widget behavior.' : 'Set up a new website for the AI agent to serve.') + '</p></div>' +
+    '<div class="space-y-4 px-6 py-5">' +
+      '<div class="grid gap-4 sm:grid-cols-2">' +
+        '<div><label class="label" for="f_name">Business name *</label><input id="f_name" class="input" placeholder="Nova Electronics" value="' + esc(d ? d.name : '') + '"></div>' +
+        '<div><label class="label" for="f_website">Website *</label><input id="f_website" class="input font-mono" type="url" placeholder="https://example.com" value="' + esc(d ? d.website : '') + '"></div>' +
+      '</div>' +
+      '<div><label class="label" for="f_color">Brand color</label>' +
+        '<div class="flex items-center gap-3">' +
+          '<input id="f_color" type="color" value="' + esc(color) + '" class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 bg-white p-1">' +
+          '<div class="flex flex-wrap gap-1.5">' + COLOR_SWATCHES.map((c) =>
+            '<button type="button" onclick="document.getElementById(\'f_color\').value=\'' + c + '\'" class="h-7 w-7 rounded-full ring-2 ring-offset-1 transition hover:scale-110" style="background:' + c + ';--tw-ring-color:#e2e8f0" title="' + c + '"></button>'
+          ).join('') + '</div>' +
+        '</div></div>' +
+      '<div><label class="label" for="f_welcome">Welcome message</label><textarea id="f_welcome" rows="2" class="input" placeholder="Hi! How can I help you today?">' + esc(d ? d.welcome_message : '') + '</textarea></div>' +
+      '<div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">' +
+        '<label class="flex cursor-pointer items-center justify-between"><span class="text-sm font-semibold text-slate-800">Proactive trigger</span>' +
+        '<span class="relative inline-flex cursor-pointer items-center"><input id="f_trig_enabled" type="checkbox" class="peer sr-only"' + (trig.enabled ? ' checked' : '') + '>' +
+        '<span class="block h-6 w-11 rounded-full bg-slate-300 transition-colors peer-checked:bg-indigo-600"></span>' +
+        '<span class="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5"></span></span></label>' +
+        '<p class="mt-1 text-xs text-slate-500">Pop the chat open automatically with a nudge message.</p>' +
+        '<div class="mt-3 grid gap-3 sm:grid-cols-2">' +
+          '<div><label class="label" for="f_trig_pages">Pages (comma-separated)</label><input id="f_trig_pages" class="input font-mono" placeholder="/, /products" value="' + esc((trig.pages || []).join(', ')) + '"></div>' +
+          '<div><label class="label" for="f_trig_delay">Delay (seconds)</label><input id="f_trig_delay" type="number" min="0" max="300" class="input" value="' + esc(trig.delay_sec != null ? trig.delay_sec : 10) + '"></div>' +
+        '</div>' +
+        '<div class="mt-3"><label class="label" for="f_trig_msg">Trigger message</label><input id="f_trig_msg" class="input" placeholder="Need help finding something?" value="' + esc(trig.message || '') + '"></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">' +
+      '<button class="btn-secondary" onclick="UI.closeModal()">Cancel</button>' +
+      '<button class="btn-primary" id="tenant-save-btn" onclick="UI.saveTenant(' + (edit ? 'true' : 'false') + ')">' + (edit ? 'Save changes' : 'Create tenant') + '</button>' +
+    '</div>'
+  );
+}
+
+/* ================= TOOL MODAL ================= */
+const SCHEMA_EXAMPLE = '{\n  "type": "object",\n  "properties": {\n    "order_id": {\n      "type": "string",\n      "description": "The order ID to look up"\n    }\n  },\n  "required": ["order_id"]\n}';
+function renderToolModal(toolId) {
+  const tool = toolId ? (state.tools || []).find((x) => x.id === toolId) : null;
+  openModal(
+    '<div class="border-b border-slate-100 px-6 py-4"><h3 class="text-base font-bold text-slate-900">' + (tool ? 'Edit tool' : 'Add custom tool') + '</h3>' +
+    '<p class="text-xs text-slate-500">' + (tool ? 'Update how the agent calls this webhook.' : 'Define a webhook the agent can call mid-conversation.') + '</p></div>' +
+    '<div class="space-y-4 px-6 py-5">' +
+      '<div class="grid gap-4 sm:grid-cols-2">' +
+        '<div><label class="label" for="t_name">Tool name *</label><input id="t_name" class="input font-mono" placeholder="check_stock" value="' + esc(tool ? tool.name : '') + '"></div>' +
+        '<div><label class="label" for="t_url">Webhook URL *</label><input id="t_url" class="input font-mono" type="url" placeholder="https://api.example.com/hooks/stock" value="' + esc(tool ? tool.webhook_url : '') + '"></div>' +
+      '</div>' +
+      '<div><label class="label" for="t_desc">Description *</label><textarea id="t_desc" rows="2" class="input" placeholder="What this tool does — the agent reads this to decide when to call it.">' + esc(tool ? tool.description : '') + '</textarea></div>' +
+      '<div><label class="label" for="t_schema">Params JSON schema *</label>' +
+      '<textarea id="t_schema" rows="8" spellcheck="false" class="input font-mono !text-xs leading-relaxed">' + esc(tool ? prettyJSON(tool.params_schema) : SCHEMA_EXAMPLE) + '</textarea>' +
+      '<p class="mt-1 text-[11px] text-slate-400">Must be valid JSON. The agent fills these params from the conversation.</p></div>' +
+      '<label class="flex cursor-pointer items-center gap-3"><span class="relative inline-flex items-center"><input id="t_enabled" type="checkbox" class="peer sr-only"' + (!tool || tool.enabled ? ' checked' : '') + '>' +
+      '<span class="block h-6 w-11 rounded-full bg-slate-300 transition-colors peer-checked:bg-indigo-600"></span>' +
+      '<span class="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5"></span></span>' +
+      '<span class="text-sm font-medium text-slate-700">Enabled — agent may call this tool</span></label>' +
+    '</div>' +
+    '<div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">' +
+      '<button class="btn-secondary" onclick="UI.closeModal()">Cancel</button>' +
+      '<button class="btn-primary" id="tool-save-btn" onclick="UI.saveTool(' + (tool ? '\'' + esc(tool.id) + '\'' : 'null') + ')">' + (tool ? 'Save changes' : 'Add tool') + '</button>' +
+    '</div>', 'max-w-xl'
+  );
+}
+
+/* ================= UI ACTIONS ================= */
+async function loadTenantData(id) {
+  const [detail, pages, tools, actions, unanswered, analytics] = await Promise.all([
+    apiGet('/api/tenants/' + id),
+    apiGet('/api/tenants/' + id + '/pages'),
+    apiGet('/api/tenants/' + id + '/tools'),
+    apiGet('/api/tenants/' + id + '/actions?limit=50'),
+    apiGet('/api/tenants/' + id + '/unanswered'),
+    apiGet('/api/tenants/' + id + '/analytics')
+  ]);
+  Object.assign(state, { tenantDetail: detail, pages, tools, actions, unanswered, analytics });
+}
+
+const UI = {
+  closeModal,
+  _confirmResolve: null,
+
+  toggleSidebar() {
+    const sb = $('#sidebar'), ov = $('#sidebar-overlay');
+    const open = sb.classList.contains('-translate-x-full');
+    sb.classList.toggle('-translate-x-full', !open);
+    ov.classList.toggle('hidden', !open);
+  },
+
+  async selectTenant(id) {
+    if (state.loading && state.currentTenantId === id) return;
+    state.currentTenantId = id;
+    state.currentTab = state.currentTab || 'sources';
+    state.loading = true; state.loadError = null;
+    $('#sidebar-overlay').classList.add('hidden');
+    $('#sidebar').classList.add('-translate-x-full');
+    renderSidebar(); renderHeader(); renderTabs(); renderContent();
+    try {
+      await loadTenantData(id);
+      const t = mockTenantSafe(id);
+      if (t) { const s = state.tenants.find((x) => x.id === id); if (s) Object.assign(s, { name: t.name, website: t.website, brand_color: t.brand_color }); }
+    } catch (e) {
+      state.loadError = e.message;
+      toast(e.message, 'error');
+    }
+    state.loading = false;
+    renderSidebar(); renderHeader(); renderTabs(); renderContent();
+  },
+
+  setTab(tab) {
+    state.currentTab = tab;
+    renderTabs(); renderContent();
+    $('#content').scrollTop = 0;
+  },
+
+  openTenantModal(edit = false) { renderTenantModal(edit); },
+
+  async saveTenant(edit) {
+    const btn = $('#tenant-save-btn');
+    const name = $('#f_name').value.trim();
+    const website = $('#f_website').value.trim();
+    if (!name) { toast('Business name is required.', 'error'); $('#f_name').focus(); return; }
+    if (!website) { toast('Website URL is required.', 'error'); $('#f_website').focus(); return; }
+    const body = {
+      name, website,
+      brand_color: $('#f_color').value,
+      welcome_message: $('#f_welcome').value.trim(),
+      trigger: {
+        enabled: $('#f_trig_enabled').checked,
+        pages: $('#f_trig_pages').value.split(',').map((s) => s.trim()).filter(Boolean),
+        delay_sec: Math.max(0, parseInt($('#f_trig_delay').value, 10) || 0),
+        message: $('#f_trig_msg').value.trim()
+      }
+    };
+    btn.disabled = true; btn.innerHTML = spinner() + 'Saving…';
+    try {
+      if (edit) {
+        const updated = await apiPut('/api/tenants/' + state.currentTenantId, body);
+        const s = state.tenants.find((x) => x.id === state.currentTenantId);
+        if (s) Object.assign(s, { name: updated.name, website: updated.website, brand_color: updated.brand_color });
+        await loadTenantData(state.currentTenantId);
+        toast('Tenant updated.', 'success');
+      } else {
+        const created = await apiPost('/api/tenants', body);
+        state.tenants.push({ id: created.id, name: created.name, website: created.website, brand_color: created.brand_color, created_at: created.created_at });
+        toast('Tenant created.', 'success');
+        closeModal();
+        await UI.selectTenant(created.id);
+        return;
+      }
+      closeModal();
+      renderSidebar(); renderHeader(); renderTabs(); renderContent();
+    } catch (e) {
+      toast(e.message, 'error');
+      btn.disabled = false; btn.textContent = edit ? 'Save changes' : 'Create tenant';
+    }
+  },
+
+  async deleteTenant() {
+    const t = currentTenant();
+    if (!t) return;
+    const ok = await confirmAction({
+      title: 'Delete tenant?',
+      message: '“' + t.name + '” and all of its crawled data, tools, and logs will be permanently removed.',
+      okLabel: 'Delete tenant'
+    });
+    if (!ok) return;
+    try {
+      await apiDel('/api/tenants/' + t.id);
+      state.tenants = state.tenants.filter((x) => x.id !== t.id);
+      toast('Tenant deleted.', 'success');
+      if (state.tenants.length) await UI.selectTenant(state.tenants[0].id);
+      else {
+        state.currentTenantId = null; state.tenantDetail = null;
+        state.pages = []; state.tools = []; state.actions = []; state.unanswered = []; state.analytics = null;
+        renderSidebar(); renderHeader(); renderTabs(); renderContent();
+      }
+    } catch (e) { toast(e.message, 'error'); }
+  },
+
+  async runCrawl(e) {
+    e.preventDefault();
+    const t = currentTenant();
+    const url = $('#crawl-url').value.trim();
+    if (!url || !t) return false;
+    state.crawling = true;
+    $('#crawl-btn').disabled = true;
+    $('#crawl-btn').innerHTML = spinner() + 'Crawling…';
+    $('#crawl-result').innerHTML = '';
+    try {
+      const r = await apiPost('/api/tenants/' + t.id + '/ingest', { website_url: url });
+      $('#crawl-result').innerHTML = '<div class="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">' +
+        '<svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>' +
+        '<span><strong>' + num(r.pages_crawled) + '</strong> pages crawled · <strong>' + num(r.products_found) + '</strong> products found</span></div>';
+      state.pages = await apiGet('/api/tenants/' + t.id + '/pages');
+      toast('Crawl complete — knowledge base updated.', 'success');
+      renderContent();
+    } catch (err) {
+      $('#crawl-result').innerHTML = '<div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">' + esc(err.message) + '</div>';
+      toast(err.message, 'error');
+    }
+    state.crawling = false;
+    return false;
+  },
+
+  async uploadFiles(input) {
+    const t = currentTenant();
+    const files = input.files;
+    if (!files || !files.length || !t) return;
+    state.uploading = true;
+    renderContent();
+    try {
+      const r = await apiUpload(t.id, files);
+      $('#upload-result') && ($('#upload-result').innerHTML = '');
+      state.pages = await apiGet('/api/tenants/' + t.id + '/pages');
+      toast(num(r.files_indexed) + ' file(s) indexed into the knowledge base.', 'success');
+    } catch (err) { toast(err.message, 'error'); }
+    state.uploading = false;
+    input.value = '';
+    renderContent();
+  },
+
+  async seedDemo() {
+    const t = currentTenant();
+    if (!t) return;
+    try {
+      const r = await apiPost('/api/tenants/' + t.id + '/seed-demo', {});
+      state.pages = await apiGet('/api/tenants/' + t.id + '/pages');
+      toast('Demo catalog seeded — ' + num(r.products) + ' products indexed.', 'success');
+      renderContent();
+    } catch (e) { toast(e.message, 'error'); }
+  },
+
+  openToolModal(toolId = null) { renderToolModal(toolId); },
+
+  async saveTool(toolId) {
+    const t = currentTenant();
+    const btn = $('#tool-save-btn');
+    const name = $('#t_name').value.trim();
+    const description = $('#t_desc').value.trim();
+    const webhook_url = $('#t_url').value.trim();
+    let params_schema;
+    try { params_schema = JSON.parse($('#t_schema').value); }
+    catch (e) { toast('Params schema is not valid JSON: ' + e.message, 'error'); $('#t_schema').focus(); return; }
+    if (!name) { toast('Tool name is required.', 'error'); return; }
+    if (!description) { toast('Description is required.', 'error'); return; }
+    if (!webhook_url) { toast('Webhook URL is required.', 'error'); return; }
+    const body = { name, description, params_schema, webhook_url, enabled: $('#t_enabled').checked };
+    btn.disabled = true; btn.innerHTML = spinner() + 'Saving…';
+    try {
+      if (toolId) { await apiPut('/api/tenants/' + t.id + '/tools/' + toolId, body); toast('Tool updated.', 'success'); }
+      else { await apiPost('/api/tenants/' + t.id + '/tools', body); toast('Tool added.', 'success'); }
+      state.tools = await apiGet('/api/tenants/' + t.id + '/tools');
+      closeModal();
+      renderContent();
+    } catch (e) {
+      toast(e.message, 'error');
+      btn.disabled = false; btn.textContent = toolId ? 'Save changes' : 'Add tool';
+    }
+  },
+
+  async deleteTool(toolId) {
+    const t = currentTenant();
+    const tool = (state.tools || []).find((x) => x.id === toolId);
+    const ok = await confirmAction({
+      title: 'Delete tool?',
+      message: '“' + (tool ? tool.name : toolId) + '” will be removed. The agent will no longer be able to call it.',
+      okLabel: 'Delete tool'
+    });
+    if (!ok) return;
+    try {
+      await apiDel('/api/tenants/' + t.id + '/tools/' + toolId);
+      state.tools = await apiGet('/api/tenants/' + t.id + '/tools');
+      toast('Tool deleted.', 'success');
+      renderContent();
+    } catch (e) { toast(e.message, 'error'); }
+  },
+
+  async toggleTool(toolId, enabled) {
+    const t = currentTenant();
+    const tool = (state.tools || []).find((x) => x.id === toolId);
+    if (!t || !tool) return;
+    try {
+      const updated = await apiPut('/api/tenants/' + t.id + '/tools/' + toolId, {
+        name: tool.name, description: tool.description, params_schema: tool.params_schema,
+        webhook_url: tool.webhook_url, enabled
+      });
+      Object.assign(tool, updated);
+      toast('“' + tool.name + '” ' + (enabled ? 'enabled.' : 'disabled.'), 'success');
+      renderContent();
+    } catch (e) {
+      toast(e.message, 'error');
+      renderContent();
+    }
+  },
+
+  async answerQuestion(qid) {
+    const t = currentTenant();
+    const ta = $('#ans-' + qid);
+    const btn = $('#ansbtn-' + qid);
+    const answer = ta ? ta.value.trim() : '';
+    if (!answer) { toast('Write an answer first — it becomes the canonical response.', 'error'); ta && ta.focus(); return; }
+    btn.disabled = true; btn.innerHTML = spinner() + 'Ingesting…';
+    try {
+      await apiPost('/api/tenants/' + t.id + '/unanswered/' + qid + '/answer', { answer });
+      state.unanswered = await apiGet('/api/tenants/' + t.id + '/unanswered');
+      toast('Answer ingested — the agent will use it from now on.', 'success');
+      renderTabs(); renderContent();
+    } catch (e) {
+      toast(e.message, 'error');
+      btn.disabled = false; btn.innerHTML = 'Answer &amp; ingest into knowledge base';
+    }
+  },
+
+  copyEmbed() {
+    const code = embedSnippet();
+    const done = () => {
+      const lbl = $('#copy-label');
+      if (lbl) lbl.textContent = 'Copied';
+      toast('Embed snippet copied to clipboard.', 'success');
+      setTimeout(() => { const l = $('#copy-label'); if (l) l.textContent = 'Copy'; }, 2000);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(done).catch(() => fallbackCopy(code, done));
+    } else fallbackCopy(code, done);
+  },
+
+  toggleChecklist(i) {
+    const t = currentTenant();
+    if (!t) return;
+    const key = t.id + ':' + i;
+    if (state.checkedSteps.has(key)) state.checkedSteps.delete(key);
+    else state.checkedSteps.add(key);
+    renderContent();
+  }
+};
+window.UI = UI;
+function mockTenantSafe(id) { return PREVIEW ? mockTenant(id) : null; }
+function fallbackCopy(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) { toast('Copy failed — select the code manually.', 'error'); }
+  document.body.removeChild(ta);
+}
+
+/* ================= init ================= */
+(async function init() {
+  if (PREVIEW) $('#preview-badge').classList.remove('hidden');
+  try {
+    state.tenants = await apiGet('/api/tenants');
+  } catch (e) {
+    toast(e.message, 'error');
+    $('#content').innerHTML = errorBlock(e.message + ' — the dashboard talks to the same origin it is served from.', null);
+    renderSidebar(); renderHeader(); renderTabs();
+    return;
+  }
+  renderSidebar(); renderHeader(); renderTabs(); renderContent();
+  if (state.tenants.length) UI.selectTenant(state.tenants[0].id);
+})();
+</script>
+</body>
+</html>
